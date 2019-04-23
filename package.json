@@ -1,0 +1,14 @@
+{
+  "name": "yapeg",
+  "version": "0.0.1",
+  "description": "Parsing Expression Grammars",
+  "main": "peg.js",
+  "devDependencies": {
+    "jasmine": "^3.4.0"
+  },
+  "scripts": {
+    "test": "jasmine"
+  },
+  "author": "Lincoln Clarete",
+  "license": "MIT"
+}
