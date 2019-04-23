@@ -52,8 +52,6 @@ function parse(source) {
     while (predicate()) chars += nextc();
     return chars;
   };
-
-
   const G = () => {
     parseSpacing();
     return oneOrMore(parseDefinition);
@@ -111,7 +109,7 @@ function parse(source) {
     const ranges = zeroOrMore(() =>
       not(() => match(']')) && parseRange());
     must(']');
-    parseSpacing();
+    Spacing();
     return ranges;
   };
   const parseRange = () => {
@@ -119,42 +117,71 @@ function parse(source) {
     if (match('-')) return [ch1, parseChar()];
     return ch1;
   };
-  const parseChar = () => {
-    if (match('\\')) {
-      const eschr = ['n', 'r', 't', "'", '"', '[', ']', '\\'];
-      for (const s of eschr) {
-        const m = match(s);
-        if (m) return m;
-      }
-      return error(`Expected either of ${eschr}`);
-    }
-    const tmp = currc(); nextc();
-    return tmp;
-  };
+
   const parseDot = () =>
     [must('.'), parseSpacing(), any].pop();
-  const parseArrow = () =>
-    must("<") && must("-") && parseSpacing();
 
-  // Comments & Spacing
-  const parseComment = () => {
-    must("#");
-    const comment = consume(() => !isEndOfLine());
-    if (consume(isEndOfLine).length < 1)
-      error('Cant find end of line for comment');
-    return comment;
+  const Literal = () => [
+    must("'"),
+    zeroOrMore(() => not(() => must("'")) && Char()),
+    must("'"),
+    Spacing()];
+
+  // Literal    <- ['] (!['] Char)* ['] Spacing
+  //             / ["] (!["] Char)* ["] Spacing
+  // Class      <- '[' (!']' Range)* ']' Spacing
+  const Range      = () => choice(() =>[Char(), must('-'), Char], Char);
+  const Char = () => {
+    if (match('\\')) {
+      const eschr = ['n', 'r', 't', "'", '"', '[', ']', '\\'];
+      if (eschr.includes(currc())) return match(currc());
+      return error(`Expected either of ${eschr}`);
+    }
+    return nextc();
   };
-  const isEndOfLine = () =>
-    ['\r\n', '\n', '\r'].includes(currc());
-  const isSpace = () =>
-    [' ', '\t'].includes(currc()) || isEndOfLine();
-  const parseSpace = () =>
-    consume(isSpace) || error('Cant find space');
-  const parseSpacing = () =>
-    zeroOrMore(() => choice(parseComment, parseSpace));
+
+  // Primitive that needed the parser context
+  const any = Char;
+
+  const LEFTARROW  = () => must("<") && must("-") && Spacing();
+  const SLASH      = () => must('/') && Spacing();
+  const AND        = () => must('&') && Spacing();
+  const NOT        = () => must('!') && Spacing();
+  const QUESTION   = () => must('?') && Spacing();
+  const STAR       = () => must('*') && Spacing();
+  const PLUS       = () => must('+') && Spacing();
+  const OPEN       = () => must('(') && Spacing();
+  const CLOSE      = () => must(')') && Spacing();
+  const DOT        = () => must('.') && Spacing();
+
+  const Spacing    = () => zeroOrMore(() => choice(Space, Comment));
+  const Comment    = () => [must('#'), zeroOrMore(() => not(EndOfLine) && any()), EndOfLine()];
+  const Space      = () => choice(( ) => must(' '), () => must('\t'), EndOfLine);
+  const EndOfLine  = () => choice(['\r\n', '\n', '\r'].map(x => must(x)));
+  const EndOfFile  = () => eos() || error("Expected EOS");
 
   return {
-    parseSpacing,
+    // useful for tests
+    currc,
+    cursor,
+    eos,
+    // Actual thing
+    LEFTARROW,
+    SLASH,
+    AND,
+    NOT,
+    QUESTION,
+    STAR,
+    PLUS,
+    OPEN,
+    CLOSE,
+    DOT,
+
+    Spacing,
+    Comment,
+    Space,
+    EndOfLine,
+    EndOfFile,
   };
 }
 

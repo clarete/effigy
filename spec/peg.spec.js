@@ -8,8 +8,6 @@ const {
   parse,
 } = require("../peg2");
 
-
-
 // deftest("aaa");            assertEq(zeroOrMore(() => must('a')), ['a', 'a', 'a']);
 // deftest("some 123\nchrs"); assert.equal(zeroOrMore(parseChar).join(''), 'some 123\nchrs');
 // deftest("# comment\n  ");  assertEq(parseSpacing(), [' comment', '  ']);
@@ -30,8 +28,24 @@ const {
 // deftest('![a]');             console.log(parseExpression());//assertEq(parseExpression(), []);
 
 describe("peg parser", () => {
-  it("#parseSpacing", () => {
-    expect(parse(" ").parseSpacing()).toEqual([" "]);
+  describe("#parseArrow", () => {
+    it("should parse arrow at cursor", () => {
+      const p = parse("<- ");
+      p.LEFTARROW();
+      expect(p.eos()).toBe(true);
+    });
+  });
+  describe("#Spacing", () => {
+    it("should parse spaces", () => {
+      const p = parse("  ");
+      expect(p.Spacing()).toEqual([' ', ' ']);
+      expect(p.eos()).toBe(true);
+    });
+    it("should parse comments", () => {
+      const p = parse("# foo bar baz  ");
+      expect(p.Spacing()).toEqual([]);
+      expect(p.eos()).toBe(true);
+    });
   });
 });
 
