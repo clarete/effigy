@@ -35,6 +35,13 @@ const not = (thing) => {
 // And Operator (&)
 const and = (thing) => not(() => not(thing));
 
+// class Dot extends Node {}
+
+const Peg = {
+  DOT() {},
+  Class() { return 1; },
+};
+
 // Basic machinery to parse things
 function parse(source) {
   let cursor = 0;
@@ -45,6 +52,7 @@ function parse(source) {
   const nextc = () => checkeos() || source[cursor++];
   const testc = (c) =>  currc() === c;
   const match = (c) => testc(c) ? nextc() : false;
+  const mustc = (c) => testc(c) || error(`Missing '${c}' at pos '${cursor}'`);
   const must = (c) => match(c) || error(`Missing '${c}' at pos '${cursor}'`);
   const eos = () => cursor === source.length;
   const consume = (predicate) => {
@@ -52,85 +60,84 @@ function parse(source) {
     while (predicate()) chars += nextc();
     return chars;
   };
-  const G = () => {
-    parseSpacing();
-    return oneOrMore(parseDefinition);
+  const backtrack = (exp) => {
+    const saved = cursor;
+    try { return exp(); }
+    catch (e) { cursor = saved; throw e; }
   };
-  const parseDefinition = () => {
-    const id = parseIdentifier();
-    parseArrow();
-    return [id, parseExpression()];
+  // Wrapper for primitives that need backtracking
+  const Choice = (...a) => choice(...a.map(x => () => backtrack(x)));
+  // const Not = (x) => backtrack(() => not(x));
+
+  // PEG Parser
+
+  // const G = () => {
+  //   parseSpacing();
+  //   return oneOrMore(parseDefinition);
+  // };
+  // const parseDefinition = () => {
+  //   const id = parseIdentifier();
+  //   parseArrow();
+  //   return [id, parseExpression()];
+  // };
+
+  // const parseSlash = () => must('/') && parseSpacing();
+  // const parseExpression = () =>
+  //   [parseSequence()].concat(
+  //     zeroOrMore(() => {
+  //       parseSlash();
+  //       return parseSequence();
+  //     }));
+
+  // const parseSequence = () => parsePrefix();
+
+  // const parseAnd = () => [must('&'), parseSpacing(), and].pop();
+  // const parseNot = () => [must('!'), parseSpacing(), not].pop();
+
+  // const parsePrefix = () =>
+  //   [optional(() => choice(parseAnd, parseNot)), parseSuffix()];
+
+  // const parseSuffix = () => parsePrimary();
+
+  // const parsePrimary = () =>
+  //   choice(Literal, Class, Dot);
+
+  const Grammar = () => [Spacing(), oneOrMore(Definition), EndOfFile()][1];
+  const Definition = () => [Identifier(), LEFTARROW(), Expression()];
+
+  const Expression = () => [Sequence(), zeroOrMore(() => SLASH() && Sequence())];
+  const Sequence = () => zeroOrMore(Prefix);
+  const Prefix = () => {
+    const [prefix, primary] = [optional(() => choice(AND, NOT)), Primary()];
+    return prefix ? [prefix, primary] : primary;
   };
-
-  const parseSlash = () => must('/') && parseSpacing();
-  const parseExpression = () =>
-    [parseSequence()].concat(
-      zeroOrMore(() => {
-        parseSlash();
-        return parseSequence();
-      }));
-
-  const parseSequence = () => parsePrefix();
-
-  const parseAnd = () => [must('&'), parseSpacing(), and].pop();
-  const parseNot = () => [must('!'), parseSpacing(), not].pop();
-
-  const parsePrefix = () =>
-    [optional(() => choice(parseAnd, parseNot)), parseSuffix()];
-
-  const parseSuffix = () => parsePrimary();
-
-  const parsePrimary = () =>
-    choice(parseLiteral, parseClass, parseDot);
-
-  const parseLiteral = () => {
-    if (match('"')) {
-      const out = consume(() => !testc('"'));
-      must('"'); parseSpacing();
-      return out;
-    } else if (match("'")) {
-      const out = consume(() => !testc("'"));
-      must("'"); parseSpacing();
-      return out;
-    }
-    return error("No literal found");
+  const Suffix = () => {
+    const [primary, suffix] = [Primary(), optional(() => choice(QUESTION, STAR, PLUS))];
+    return suffix ? [primary, suffix] : primary;
   };
+  const Primary = () => choice(Literal, Class, DOT);
 
-  const parseIdentifier = () => {
+  // # Lexical syntax
+  const Identifier = () => {
     const isIdentStart = () => /[A-Za-z_]/.test(currc());
     const isIdentCont = () => /[A-Za-z0-9_]/.test(currc());
     const identifier = isIdentStart() && consume(isIdentCont);
-    parseSpacing();
-    return identifier || error("Expected Identifier");
-  };
-
-  const parseClass = () => {
-    must('[');
-    const ranges = zeroOrMore(() =>
-      not(() => match(']')) && parseRange());
-    must(']');
     Spacing();
-    return ranges;
+    return Symbol.for(identifier) || error("Expected Identifier");
   };
-  const parseRange = () => {
-    const ch1 = parseChar();
-    if (match('-')) return [ch1, parseChar()];
-    return ch1;
-  };
+  const _mkLiteral = (ch) => () => [
+    must(ch),
+    zeroOrMore(() => not(() => mustc(ch)) && Char()),
+    must(ch),
+    Spacing()][1].join("");
+  const Literal = () => Choice(_mkLiteral("'"), _mkLiteral('"'));
+  const Class = () => [Peg.Class, [
+    must('['),
+    zeroOrMore(() => not(() => mustc(']')) && Range()),
+    must(']'),
+    Spacing()][1]];
 
-  const parseDot = () =>
-    [must('.'), parseSpacing(), any].pop();
-
-  const Literal = () => [
-    must("'"),
-    zeroOrMore(() => not(() => must("'")) && Char()),
-    must("'"),
-    Spacing()];
-
-  // Literal    <- ['] (!['] Char)* ['] Spacing
-  //             / ["] (!["] Char)* ["] Spacing
-  // Class      <- '[' (!']' Range)* ']' Spacing
-  const Range      = () => choice(() =>[Char(), must('-'), Char], Char);
+  const Range = () => Choice(() => [Char(), must('-'), Char()].filter((_, i) => i !== 1), Char);
   const Char = () => {
     if (match('\\')) {
       const eschr = ['n', 'r', 't', "'", '"', '[', ']', '\\'];
@@ -139,9 +146,6 @@ function parse(source) {
     }
     return nextc();
   };
-
-  // Primitive that needed the parser context
-  const any = Char;
 
   const LEFTARROW  = () => must("<") && must("-") && Spacing();
   const SLASH      = () => must('/') && Spacing();
@@ -152,12 +156,15 @@ function parse(source) {
   const PLUS       = () => must('+') && Spacing();
   const OPEN       = () => must('(') && Spacing();
   const CLOSE      = () => must(')') && Spacing();
-  const DOT        = () => must('.') && Spacing();
+  const DOT        = () => must('.') && Spacing() && [Peg.DOT];
 
   const Spacing    = () => zeroOrMore(() => choice(Space, Comment));
-  const Comment    = () => [must('#'), zeroOrMore(() => not(EndOfLine) && any()), EndOfLine()];
-  const Space      = () => choice(( ) => must(' '), () => must('\t'), EndOfLine);
-  const EndOfLine  = () => choice(['\r\n', '\n', '\r'].map(x => must(x)));
+  const Comment    = () => [must('#'), zeroOrMore(() => not(EndOfLine) && Char()), EndOfLine()];
+  const Space      = () => Choice(( ) => must(' '), () => must('\t'), EndOfLine);
+  const EndOfLine  = () => Choice(
+    () => must('\r') && must('\n'),
+    () => must('\n'),
+    () => must('\r'));
   const EndOfFile  = () => eos() || error("Expected EOS");
 
   return {
@@ -166,6 +173,21 @@ function parse(source) {
     cursor,
     eos,
     // Actual thing
+    Grammar,
+    Definition,
+
+    Expression,
+    Sequence,
+    Prefix,
+    Suffix,
+    Primary,
+
+    Identifier,
+    Literal,
+    Class,
+    Range,
+    Char,
+
     LEFTARROW,
     SLASH,
     AND,
@@ -185,15 +207,12 @@ function parse(source) {
   };
 }
 
-
-
-// // Any Operator (.)
-// const any = () => nextc();     // Should be next in the input, not source
-// // Class Operator ([])
-// const class_ = (c) => typeof c === 'string' ? c : range(c);
-// const range = (c) => c;
-// // Sequence Operator
-// const sequence = (s) => s;
+function peg(source) {
+  const g = parse(source).Grammar();
+  return (input) => {
+    console.log('GRAMMAR', g);
+  };
+}
 
 module.exports = {
   // Primitives
@@ -205,4 +224,6 @@ module.exports = {
   and,
   // Parser Interface
   parse,
+  Peg,
+  peg,
 };
