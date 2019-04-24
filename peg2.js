@@ -1,3 +1,5 @@
+const sym = Symbol.for;
+
 // --- PEG Primitives (Doesn't include lexer) ---
 
 // Star Operator (*)
@@ -35,13 +37,6 @@ const not = (thing) => {
 // And Operator (&)
 const and = (thing) => not(() => not(thing));
 
-// class Dot extends Node {}
-
-const Peg = {
-  DOT() {},
-  Class() { return 1; },
-};
-
 // Basic machinery to parse things
 function parse(source) {
   let cursor = 0;
@@ -67,41 +62,8 @@ function parse(source) {
   };
   // Wrapper for primitives that need backtracking
   const Choice = (...a) => choice(...a.map(x => () => backtrack(x)));
-  // const Not = (x) => backtrack(() => not(x));
 
   // PEG Parser
-
-  // const G = () => {
-  //   parseSpacing();
-  //   return oneOrMore(parseDefinition);
-  // };
-  // const parseDefinition = () => {
-  //   const id = parseIdentifier();
-  //   parseArrow();
-  //   return [id, parseExpression()];
-  // };
-
-  // const parseSlash = () => must('/') && parseSpacing();
-  // const parseExpression = () =>
-  //   [parseSequence()].concat(
-  //     zeroOrMore(() => {
-  //       parseSlash();
-  //       return parseSequence();
-  //     }));
-
-  // const parseSequence = () => parsePrefix();
-
-  // const parseAnd = () => [must('&'), parseSpacing(), and].pop();
-  // const parseNot = () => [must('!'), parseSpacing(), not].pop();
-
-  // const parsePrefix = () =>
-  //   [optional(() => choice(parseAnd, parseNot)), parseSuffix()];
-
-  // const parseSuffix = () => parsePrimary();
-
-  // const parsePrimary = () =>
-  //   choice(Literal, Class, Dot);
-
   const Grammar = () => [Spacing(), oneOrMore(Definition), EndOfFile()][1];
   const Definition = () => [Identifier(), LEFTARROW(), Expression()];
 
@@ -113,9 +75,10 @@ function parse(source) {
   };
   const Suffix = () => {
     const [primary, suffix] = [Primary(), optional(() => choice(QUESTION, STAR, PLUS))];
-    return suffix ? [primary, suffix] : primary;
+    return suffix ? [suffix, primary] : primary;
   };
-  const Primary = () => choice(Literal, Class, DOT);
+  const Primary = () => Choice(() => [Identifier(), not(LEFTARROW)][0],
+                              Literal, Class, DOT);
 
   // # Lexical syntax
   const Identifier = () => {
@@ -123,7 +86,8 @@ function parse(source) {
     const isIdentCont = () => /[A-Za-z0-9_]/.test(currc());
     const identifier = isIdentStart() && consume(isIdentCont);
     Spacing();
-    return Symbol.for(identifier) || error("Expected Identifier");
+    if (identifier) return Symbol.for(identifier);
+    return error("Expected Identifier");
   };
   const _mkLiteral = (ch) => () => [
     must(ch),
@@ -131,7 +95,7 @@ function parse(source) {
     must(ch),
     Spacing()][1].join("");
   const Literal = () => Choice(_mkLiteral("'"), _mkLiteral('"'));
-  const Class = () => [Peg.Class, [
+  const Class = () => [sym('Class'), [
     must('['),
     zeroOrMore(() => not(() => mustc(']')) && Range()),
     must(']'),
@@ -149,14 +113,14 @@ function parse(source) {
 
   const LEFTARROW  = () => must("<") && must("-") && Spacing();
   const SLASH      = () => must('/') && Spacing();
-  const AND        = () => must('&') && Spacing();
-  const NOT        = () => must('!') && Spacing();
-  const QUESTION   = () => must('?') && Spacing();
-  const STAR       = () => must('*') && Spacing();
-  const PLUS       = () => must('+') && Spacing();
+  const AND        = () => must('&') && Spacing() && sym('and');
+  const NOT        = () => must('!') && Spacing() && sym('not');
+  const QUESTION   = () => must('?') && Spacing() && sym('optional');
+  const STAR       = () => must('*') && Spacing() && sym('zeroOrMore');
+  const PLUS       = () => must('+') && Spacing() && sym('oneOrMore');
   const OPEN       = () => must('(') && Spacing();
   const CLOSE      = () => must(')') && Spacing();
-  const DOT        = () => must('.') && Spacing() && [Peg.DOT];
+  const DOT        = () => must('.') && Spacing() && sym('DOT');
 
   const Spacing    = () => zeroOrMore(() => choice(Space, Comment));
   const Comment    = () => [must('#'), zeroOrMore(() => not(EndOfLine) && Char()), EndOfLine()];
@@ -224,6 +188,6 @@ module.exports = {
   and,
   // Parser Interface
   parse,
-  Peg,
   peg,
+  sym,
 };
