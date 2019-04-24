@@ -62,23 +62,27 @@ function parse(source) {
   };
   // Wrapper for primitives that need backtracking
   const Choice = (...a) => choice(...a.map(x => () => backtrack(x)));
+  // Helper for flattening sequence
+  const singleOrList = (x) => (Array.isArray(x) && x.length === 1 && x[0]) || x;
 
   // PEG Parser
   const Grammar = () => [Spacing(), oneOrMore(Definition), EndOfFile()][1];
-  const Definition = () => [Identifier(), LEFTARROW(), Expression()];
+  const Definition = () => [Identifier(), LEFTARROW(), Expression()].filter((_, i) => i !== 1);
 
-  const Expression = () => [Sequence(), zeroOrMore(() => SLASH() && Sequence())];
-  const Sequence = () => zeroOrMore(Prefix);
+  const Expression = () => [Sequence()].concat(zeroOrMore(() => SLASH() && Sequence()));
+  const Sequence = () => singleOrList(zeroOrMore(Prefix));
   const Prefix = () => {
-    const [prefix, primary] = [optional(() => choice(AND, NOT)), Primary()];
-    return prefix ? [prefix, primary] : primary;
+    const [prefix, suffix] = [optional(() => Choice(AND, NOT)), Suffix()];
+    return prefix ? [prefix, suffix] : suffix;
   };
   const Suffix = () => {
-    const [primary, suffix] = [Primary(), optional(() => choice(QUESTION, STAR, PLUS))];
+    const [primary, suffix] = [Primary(), optional(() => Choice(QUESTION, STAR, PLUS))];
     return suffix ? [suffix, primary] : primary;
   };
-  const Primary = () => Choice(() => [Identifier(), not(LEFTARROW)][0],
-                              Literal, Class, DOT);
+  const Primary = () => Choice(
+    () => [Identifier(), not(LEFTARROW)][0],
+    () => [OPEN(), Expression(), CLOSE()][1],
+    Literal, Class, DOT);
 
   // # Lexical syntax
   const Identifier = () => {
@@ -120,7 +124,7 @@ function parse(source) {
   const PLUS       = () => must('+') && Spacing() && sym('oneOrMore');
   const OPEN       = () => must('(') && Spacing();
   const CLOSE      = () => must(')') && Spacing();
-  const DOT        = () => must('.') && Spacing() && sym('DOT');
+  const DOT        = () => must('.') && Spacing() && sym('any');
 
   const Spacing    = () => zeroOrMore(() => choice(Space, Comment));
   const Comment    = () => [must('#'), zeroOrMore(() => not(EndOfLine) && Char()), EndOfLine()];

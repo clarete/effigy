@@ -13,8 +13,8 @@ const {
 describe("input parser", () => {
   describe("#Literal", () => {
     it("should capture literals", () => {
-      const parse = peg('A <- "a"');
-      // console.log(parse('a'));
+      const parse = peg('A <- "n" ("," "n")*');
+      console.log(parse('a'));
       // expect(parse("a").A()).toBe('a');
     });
   });
@@ -25,15 +25,15 @@ describe("peg parser", () => {
     it("should match one definition", () => {
       const p = parse("A <- 'lit'");
       expect(p.Grammar()).toEqual([
-        [sym('A'), [' '], [['lit'], []]],
+        [sym('A'), ['lit']],
       ]);
       expect(p.eos()).toBe(true);
     });
     it("should match more than one definition", () => {
       const p = parse("A <- 'a'\nB <- 'b'");
       expect(p.Grammar()).toEqual([
-        [sym('A'), [' '], [['a'], []]],
-        [sym('B'), [' '], [['b'], []]],
+        [sym('A'), ['a']],
+        [sym('B'), ['b']],
       ]);
       expect(p.eos()).toBe(true);
     });
@@ -41,26 +41,26 @@ describe("peg parser", () => {
   describe("#Definition", () => {
     it("should match a definition", () => {
       const p = parse("A <- 'lit'");
-      expect(p.Definition()).toEqual([sym('A'), [' '], [['lit'], []]]);
+      expect(p.Definition()).toEqual([sym('A'), ['lit']]);
       expect(p.eos()).toBe(true);
     });
   });
   describe("#Expression", () => {
     it("should match single item", () => {
       const p = parse("'lit'");
-      expect(p.Expression()).toEqual([['lit'], []]);
+      expect(p.Expression()).toEqual(['lit']);
       expect(p.eos()).toBe(true);
     });
     it("should match more than one sequence", () => {
-      const p = parse("'0' / '1'");
-      expect(p.Expression()).toEqual([['0'], [['1']]]);
+      const p = parse("'0' / '1' / '2' / '3'");
+      expect(p.Expression()).toEqual(['0', '1', '2', '3']);
       expect(p.eos()).toBe(true);
     });
   });
   describe("#Sequence", () => {
     it("should match single item", () => {
       const p = parse("'lit'");
-      expect(p.Sequence()).toEqual(['lit']);
+      expect(p.Sequence()).toEqual('lit');
       expect(p.eos()).toBe(true);
     });
   });
@@ -68,6 +68,16 @@ describe("peg parser", () => {
     it("should match Prefix without any prefix", () => {
       const p = parse("'lit'");
       expect(p.Prefix()).toEqual('lit');
+      expect(p.eos()).toBe(true);
+    });
+    it("should match Prefix Not", () => {
+      const p = parse("!A");
+      expect(p.Prefix()).toEqual([sym('not'), sym('A')]);
+      expect(p.eos()).toBe(true);
+    });
+    it("should match Prefix And", () => {
+      const p = parse("&A");
+      expect(p.Prefix()).toEqual([sym('and'), sym('A')]);
       expect(p.eos()).toBe(true);
     });
   });
@@ -80,6 +90,16 @@ describe("peg parser", () => {
     it("should match Suffix Star Operator", () => {
       const p = parse("A*");
       expect(p.Suffix()).toEqual([sym('zeroOrMore'), sym('A')]);
+      expect(p.eos()).toBe(true);
+    });
+    it("should match Suffix Plus Operator", () => {
+      const p = parse("A+");
+      expect(p.Suffix()).toEqual([sym('oneOrMore'), sym('A')]);
+      expect(p.eos()).toBe(true);
+    });
+    it("should match Suffix Optional Operator", () => {
+      const p = parse("A?");
+      expect(p.Suffix()).toEqual([sym('optional'), sym('A')]);
       expect(p.eos()).toBe(true);
     });
   });
@@ -101,7 +121,7 @@ describe("peg parser", () => {
     });
     it("should match DOT", () => {
       const p = parse(".");
-      expect(p.Primary()).toEqual(sym('DOT'));
+      expect(p.Primary()).toEqual(sym('any'));
       expect(p.eos()).toBe(true);
     });
   });
