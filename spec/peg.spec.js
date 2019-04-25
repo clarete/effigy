@@ -12,7 +12,7 @@ const {
   peg,
   pegt,
   sym,
-} = require("../peg2");
+} = require("../peg");
 
 describe("input parser", () => {
   describe("#Literal", () => {
