@@ -73,7 +73,8 @@ function peg(s) {
   const Grammar = () => [Spacing(), oneOrMore(Definition), EndOfFile()][1];
   const Definition = () => [Identifier(), LEFTARROW(), Expression()].filter((_, i) => i !== 1);
 
-  const Expression = () => [Sequence()].concat(zeroOrMore(() => SLASH() && Sequence()));
+  const mc = (l) => l.length === 1 ? l : [sym('choice')].concat(l);
+  const Expression = () => mc([Sequence()].concat(zeroOrMore(() => SLASH() && Sequence())));
   const Sequence = () => singleOrList(zeroOrMore(Prefix));
   const Prefix = () => {
     const [prefix, suffix] = [optional(() => s.Choice(AND, NOT)), Suffix()];
@@ -178,12 +179,74 @@ function peg(s) {
   };
 }
 
-function parse(source) {
-  const s = scan(source);
-  // Wrapper for primitives that need backtracking
+function wrapBackTrack(s) {
   const Choice = (...a) => choice(...a.map(x => () => s.backtrack(x)));
-  return peg({ ...s, Choice });
+  return { ...s, Choice };
 }
+
+function parse(source) {
+  return peg(wrapBackTrack(scan(source)));
+}
+
+function pegt(g) {
+  const m = {};
+  const start = g[0][0];
+  for (const definition of g) {
+    const [identifier, ...expression ] = definition;
+    m[identifier] = expression;
+  }
+  return { grammar: m, start };
+}
+
+function match(G, start, s) {
+  // Primitives
+  const env = {
+    [sym('zeroOrMore')]: zeroOrMore,
+    [sym('oneOrMore')]: oneOrMore,
+    [sym('choice')]: s.Choice,
+    [sym('optional')]: optional,
+    [sym('not')]: not,
+    [sym('and')]: and,
+    ...G,
+  };
+
+  const V = n => env[n];
+  const thunk = (v) => () => matchexpr(v);
+
+  const matchexpr = (e) => {
+    console.log('matchexpr');
+    if (typeof e === 'object' && Array.isArray(e)) {
+      console.log('  * isarray', e[0], typeof e[0]);
+      // if (e.length === 0) return null;
+      if (typeof e[0] === 'symbol') {
+        console.log('    * Is lambda', e);
+  
+        const v = V(e[0]);
+        console.log('V', v, e[0]);
+        const vv = v(...e.slice(1).map(thunk));
+        console.log('    * vv', vv);
+        return vv;
+      }
+      console.log('    * Is actual array', e);
+      return e.map(matchexpr);
+    }
+    console.log('  * is not array, \'tis', typeof e, e);
+    if (typeof e === 'string') {
+      return s.must(e);
+    }
+    return e;
+  };
+  return matchexpr(G[start]);
+}
+
+  // if (Array.isArray(e)) {
+  //   if (e.length === 0) return null;
+  //   if (e[0] instanceof Symbol) return V(e);
+  //   return (v) => e.map(match);
+  // }
+
+  // return (v) => e === v && v;
+
 
 module.exports = {
   // Primitives
@@ -194,7 +257,11 @@ module.exports = {
   not,
   and,
   // Parser Interface
+  match,
   parse,
+  scan,
   peg,
+  pegt,
   sym,
+  wrapBackTrack,
 };

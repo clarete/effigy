@@ -5,19 +5,40 @@ const {
   optional,
   not,
   and,
+
+  match,
   parse,
+  scan,
   peg,
+  pegt,
   sym,
+  wrapBackTrack,
 } = require("../peg2");
 
 describe("input parser", () => {
   describe("#Literal", () => {
     it("should capture literals", () => {
-      const parse = peg('A <- "n" ("," "n")*');
-      console.log(parse('a'));
-      // expect(parse("a").A()).toBe('a');
+      const g = parse("A <- 'b' 'a'* / 'c'").Grammar();
+      const { grammar: G, start } = pegt(g);
+      const s = scan('baa');
+      const m = match(G, start, wrapBackTrack(s));
+      const s1 = scan('c');
+      const m1 = match(G, start, wrapBackTrack(s1));
     });
   });
+});
+
+describe("peg matcher", () => {
+  // it("should match literals", () => {
+  //   // expect(match('a')('a')).toBe('a');
+  // });
+
+  // it("should fail matching literals", () => {
+  //   expect(match('a')('b')).toBe(false);
+  // });
+  // it("should match lists", () => {
+  //   expect(match(['a', 'b'])('ab')).toBe('ab');
+  // });
 });
 
 describe("peg parser", () => {
@@ -53,7 +74,7 @@ describe("peg parser", () => {
     });
     it("should match more than one sequence", () => {
       const p = parse("'0' / '1' / '2' / '3'");
-      expect(p.Expression()).toEqual(['0', '1', '2', '3']);
+      expect(p.Expression()).toEqual([sym('choice'), '0', '1', '2', '3']);
       expect(p.eos()).toBe(true);
     });
   });
