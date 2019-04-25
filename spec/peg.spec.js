@@ -12,7 +12,6 @@ const {
   peg,
   pegt,
   sym,
-  wrapBackTrack,
 } = require("../peg2");
 
 describe("input parser", () => {
@@ -21,9 +20,9 @@ describe("input parser", () => {
       const g = parse("A <- 'b' 'a'* / 'c'").Grammar();
       const { grammar: G, start } = pegt(g);
       const s = scan('baa');
-      const m = match(G, start, wrapBackTrack(s));
+      const m = match(G, start, s);
       const s1 = scan('c');
-      const m1 = match(G, start, wrapBackTrack(s1));
+      const m1 = match(G, start, s1);
     });
   });
 });

@@ -59,8 +59,9 @@ function scan(source) {
     try { return exp(); }
     catch (e) { cursor = saved; throw e; }
   };
+  const Choice = (...a) => choice(...a.map(x => () => backtrack(x)));
   return {
-    currc, backtrack, consume, mustc, must, match, eos, error, nextc,
+    Choice, currc, backtrack, consume, mustc, must, match, eos, error, nextc,
   };
 }
 
@@ -179,13 +180,8 @@ function peg(s) {
   };
 }
 
-function wrapBackTrack(s) {
-  const Choice = (...a) => choice(...a.map(x => () => s.backtrack(x)));
-  return { ...s, Choice };
-}
-
 function parse(source) {
-  return peg(wrapBackTrack(scan(source)));
+  return peg(scan(source));
 }
 
 function pegt(g) {
@@ -199,7 +195,7 @@ function pegt(g) {
 }
 
 function match(G, start, s) {
-  // Primitives
+  // Primitives + Non-Terminals
   const env = {
     [sym('zeroOrMore')]: zeroOrMore,
     [sym('oneOrMore')]: oneOrMore,
@@ -209,44 +205,22 @@ function match(G, start, s) {
     [sym('and')]: and,
     ...G,
   };
-
   const V = n => env[n];
   const thunk = (v) => () => matchexpr(v);
-
   const matchexpr = (e) => {
-    console.log('matchexpr');
     if (typeof e === 'object' && Array.isArray(e)) {
-      console.log('  * isarray', e[0], typeof e[0]);
-      // if (e.length === 0) return null;
-      if (typeof e[0] === 'symbol') {
-        console.log('    * Is lambda', e);
-  
-        const v = V(e[0]);
-        console.log('V', v, e[0]);
-        const vv = v(...e.slice(1).map(thunk));
-        console.log('    * vv', vv);
-        return vv;
-      }
-      console.log('    * Is actual array', e);
+      // This is our lambda. It's an array where the first item is a
+      // symbol
+      if (typeof e[0] === 'symbol')
+        return V(e[0])(...e.slice(1).map(thunk));
+      // This is an actual list
       return e.map(matchexpr);
-    }
-    console.log('  * is not array, \'tis', typeof e, e);
-    if (typeof e === 'string') {
+    } else if (typeof e === 'string')
       return s.must(e);
-    }
     return e;
   };
   return matchexpr(G[start]);
 }
-
-  // if (Array.isArray(e)) {
-  //   if (e.length === 0) return null;
-  //   if (e[0] instanceof Symbol) return V(e);
-  //   return (v) => e.map(match);
-  // }
-
-  // return (v) => e === v && v;
-
 
 module.exports = {
   // Primitives
@@ -263,5 +237,4 @@ module.exports = {
   peg,
   pegt,
   sym,
-  wrapBackTrack,
 };
