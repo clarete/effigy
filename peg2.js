@@ -38,11 +38,10 @@ const not = (thing) => {
 const and = (thing) => not(() => not(thing));
 
 // Basic machinery to parse things
-function parse(source) {
+function scan(source) {
   let cursor = 0;
   const error = (msg) => { throw new Error(msg); };
   const checkeos = () => eos() && error('End of stream');
-  // Lexer
   const currc = () => source[cursor] || '';
   const nextc = () => checkeos() || source[cursor++];
   const testc = (c) =>  currc() === c;
@@ -60,8 +59,13 @@ function parse(source) {
     try { return exp(); }
     catch (e) { cursor = saved; throw e; }
   };
-  // Wrapper for primitives that need backtracking
-  const Choice = (...a) => choice(...a.map(x => () => backtrack(x)));
+  return {
+    currc, backtrack, consume, mustc, must, match, eos, error, nextc,
+  };
+}
+
+// PEG Parser
+function peg(s) {
   // Helper for flattening sequence
   const singleOrList = (x) => (Array.isArray(x) && x.length === 1 && x[0]) || x;
 
@@ -72,74 +76,73 @@ function parse(source) {
   const Expression = () => [Sequence()].concat(zeroOrMore(() => SLASH() && Sequence()));
   const Sequence = () => singleOrList(zeroOrMore(Prefix));
   const Prefix = () => {
-    const [prefix, suffix] = [optional(() => Choice(AND, NOT)), Suffix()];
+    const [prefix, suffix] = [optional(() => s.Choice(AND, NOT)), Suffix()];
     return prefix ? [prefix, suffix] : suffix;
   };
   const Suffix = () => {
-    const [primary, suffix] = [Primary(), optional(() => Choice(QUESTION, STAR, PLUS))];
+    const [primary, suffix] = [Primary(), optional(() => s.Choice(QUESTION, STAR, PLUS))];
     return suffix ? [suffix, primary] : primary;
   };
-  const Primary = () => Choice(
+  const Primary = () => s.Choice(
     () => [Identifier(), not(LEFTARROW)][0],
     () => [OPEN(), Expression(), CLOSE()][1],
     Literal, Class, DOT);
 
   // # Lexical syntax
   const Identifier = () => {
-    const isIdentStart = () => /[A-Za-z_]/.test(currc());
-    const isIdentCont = () => /[A-Za-z0-9_]/.test(currc());
-    const identifier = isIdentStart() && consume(isIdentCont);
+    const isIdentStart = () => /[A-Za-z_]/.test(s.currc());
+    const isIdentCont = () => /[A-Za-z0-9_]/.test(s.currc());
+    const identifier = isIdentStart() && s.consume(isIdentCont);
     Spacing();
     if (identifier) return Symbol.for(identifier);
-    return error("Expected Identifier");
+    return s.error("Expected Identifier");
   };
   const _mkLiteral = (ch) => () => [
-    must(ch),
-    zeroOrMore(() => not(() => mustc(ch)) && Char()),
-    must(ch),
+    s.must(ch),
+    zeroOrMore(() => not(() => s.mustc(ch)) && Char()),
+    s.must(ch),
     Spacing()][1].join("");
-  const Literal = () => Choice(_mkLiteral("'"), _mkLiteral('"'));
+  const Literal = () => s.Choice(_mkLiteral("'"), _mkLiteral('"'));
   const Class = () => [sym('Class'), [
-    must('['),
-    zeroOrMore(() => not(() => mustc(']')) && Range()),
-    must(']'),
+    s.must('['),
+    zeroOrMore(() => not(() => s.mustc(']')) && Range()),
+    s.must(']'),
     Spacing()][1]];
 
-  const Range = () => Choice(() => [Char(), must('-'), Char()].filter((_, i) => i !== 1), Char);
+  const Range = () => s.Choice(() => [Char(), s.must('-'), Char()].filter((_, i) => i !== 1), Char);
   const Char = () => {
-    if (match('\\')) {
+    if (s.match('\\')) {
       const eschr = ['n', 'r', 't', "'", '"', '[', ']', '\\'];
-      if (eschr.includes(currc())) return match(currc());
-      return error(`Expected either of ${eschr}`);
+      if (eschr.includes(s.currc())) return s.match(s.currc());
+      return s.error(`Expected either of ${eschr}`);
     }
-    return nextc();
+    return s.nextc();
   };
 
-  const LEFTARROW  = () => must("<") && must("-") && Spacing();
-  const SLASH      = () => must('/') && Spacing();
-  const AND        = () => must('&') && Spacing() && sym('and');
-  const NOT        = () => must('!') && Spacing() && sym('not');
-  const QUESTION   = () => must('?') && Spacing() && sym('optional');
-  const STAR       = () => must('*') && Spacing() && sym('zeroOrMore');
-  const PLUS       = () => must('+') && Spacing() && sym('oneOrMore');
-  const OPEN       = () => must('(') && Spacing();
-  const CLOSE      = () => must(')') && Spacing();
-  const DOT        = () => must('.') && Spacing() && sym('any');
+  const LEFTARROW  = () => s.must("<") && s.must("-") && Spacing();
+  const SLASH      = () => s.must('/') && Spacing();
+  const AND        = () => s.must('&') && Spacing() && sym('and');
+  const NOT        = () => s.must('!') && Spacing() && sym('not');
+  const QUESTION   = () => s.must('?') && Spacing() && sym('optional');
+  const STAR       = () => s.must('*') && Spacing() && sym('zeroOrMore');
+  const PLUS       = () => s.must('+') && Spacing() && sym('oneOrMore');
+  const OPEN       = () => s.must('(') && Spacing();
+  const CLOSE      = () => s.must(')') && Spacing();
+  const DOT        = () => s.must('.') && Spacing() && sym('any');
 
   const Spacing    = () => zeroOrMore(() => choice(Space, Comment));
-  const Comment    = () => [must('#'), zeroOrMore(() => not(EndOfLine) && Char()), EndOfLine()];
-  const Space      = () => Choice(( ) => must(' '), () => must('\t'), EndOfLine);
-  const EndOfLine  = () => Choice(
-    () => must('\r') && must('\n'),
-    () => must('\n'),
-    () => must('\r'));
-  const EndOfFile  = () => eos() || error("Expected EOS");
+  const Comment    = () => [s.must('#'), zeroOrMore(() => not(EndOfLine) && Char()), EndOfLine()];
+  const Space      = () => s.Choice(( ) => s.must(' '), () => s.must('\t'), EndOfLine);
+  const EndOfLine  = () => s.Choice(
+    () => s.must('\r') && s.must('\n'),
+    () => s.must('\n'),
+    () => s.must('\r'));
+  const EndOfFile  = () => s.eos() || s.error("Expected EOS");
 
   return {
     // useful for tests
-    currc,
-    cursor,
-    eos,
+    currc: s.currc,
+    eos: s.eos,
     // Actual thing
     Grammar,
     Definition,
@@ -175,11 +178,11 @@ function parse(source) {
   };
 }
 
-function peg(source) {
-  const g = parse(source).Grammar();
-  return (input) => {
-    console.log('GRAMMAR', g);
-  };
+function parse(source) {
+  const s = scan(source);
+  // Wrapper for primitives that need backtracking
+  const Choice = (...a) => choice(...a.map(x => () => s.backtrack(x)));
+  return peg({ ...s, Choice });
 }
 
 module.exports = {
