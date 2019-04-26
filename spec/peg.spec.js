@@ -6,38 +6,22 @@ const {
   not,
   and,
 
-  match,
   parse,
   scan,
+  pegc,
   peg,
-  pegt,
   sym,
 } = require("../peg");
 
 describe("input parser", () => {
   describe("#Literal", () => {
     it("should capture literals", () => {
-      const g = parse("A <- 'b' 'a'* / 'c'").Grammar();
-      const { grammar: G, start } = pegt(g);
-      const s = scan('baa');
-      const m = match(G, start, s);
-      const s1 = scan('c');
-      const m1 = match(G, start, s1);
+      const g = pegc("A <- 'b' 'a'* / 'c'");
+      expect(g.match("b")).toEqual([['b', []]]);
+      expect(g.match("baa")).toEqual([['b', ['a', 'a']]]);
+      expect(g.match("c")).toEqual(['c']);
     });
   });
-});
-
-describe("peg matcher", () => {
-  // it("should match literals", () => {
-  //   // expect(match('a')('a')).toBe('a');
-  // });
-
-  // it("should fail matching literals", () => {
-  //   expect(match('a')('b')).toBe(false);
-  // });
-  // it("should match lists", () => {
-  //   expect(match(['a', 'b'])('ab')).toBe('ab');
-  // });
 });
 
 describe("peg parser", () => {

@@ -61,7 +61,7 @@ function scan(source) {
   };
   const Choice = (...a) => choice(...a.map(x => () => backtrack(x)));
   return {
-    Choice, currc, backtrack, consume, mustc, must, match, eos, error, nextc,
+    Choice, currc, consume, mustc, must, match, eos, error, nextc,
   };
 }
 
@@ -184,6 +184,8 @@ function parse(source) {
   return peg(scan(source));
 }
 
+// Transforms the PEG tree in a dictionary where keys are the
+// Non-terminals and their values are expressions
 function pegt(g) {
   const m = {};
   const start = g[0][0];
@@ -194,32 +196,38 @@ function pegt(g) {
   return { grammar: m, start };
 }
 
-function match(G, start, s) {
-  // Primitives + Non-Terminals
-  const env = {
-    [sym('zeroOrMore')]: zeroOrMore,
-    [sym('oneOrMore')]: oneOrMore,
-    [sym('choice')]: s.Choice,
-    [sym('optional')]: optional,
-    [sym('not')]: not,
-    [sym('and')]: and,
-    ...G,
+function pegc(g) {
+  const { grammar: G, start } = pegt(parse(g).Grammar());
+
+  const match = (input) => {
+    const s = scan(input);
+    // Primitives + Non-Terminals
+    const env = {
+      [sym('zeroOrMore')]: zeroOrMore,
+      [sym('oneOrMore')]: oneOrMore,
+      [sym('choice')]: s.Choice,
+      [sym('optional')]: optional,
+      [sym('not')]: not,
+      [sym('and')]: and,
+      ...G,
+    };
+    const V = n => env[n];
+    const thunk = (v) => () => matchexpr(v);
+    const matchexpr = (e) => {
+      if (typeof e === 'object' && Array.isArray(e)) {
+        // This is our lambda. It's an array where the first item is a
+        // symbol
+        if (typeof e[0] === 'symbol')
+          return V(e[0])(...e.slice(1).map(thunk));
+        // This is an actual list
+        return e.map(matchexpr);
+      } else if (typeof e === 'string')
+        return s.must(e);
+      return e;
+    };
+    return matchexpr(G[start]);
   };
-  const V = n => env[n];
-  const thunk = (v) => () => matchexpr(v);
-  const matchexpr = (e) => {
-    if (typeof e === 'object' && Array.isArray(e)) {
-      // This is our lambda. It's an array where the first item is a
-      // symbol
-      if (typeof e[0] === 'symbol')
-        return V(e[0])(...e.slice(1).map(thunk));
-      // This is an actual list
-      return e.map(matchexpr);
-    } else if (typeof e === 'string')
-      return s.must(e);
-    return e;
-  };
-  return matchexpr(G[start]);
+  return { match };
 }
 
 module.exports = {
@@ -231,10 +239,9 @@ module.exports = {
   not,
   and,
   // Parser Interface
-  match,
   parse,
   scan,
   peg,
-  pegt,
+  pegc,
   sym,
 };
