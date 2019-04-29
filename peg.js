@@ -40,14 +40,14 @@ const and = (thing) => not(() => not(thing));
 // Basic machinery to parse things
 function scan(source) {
   let cursor = 0;
-  const error = (msg) => { throw new Error(msg); };
+  const error = (msg) => { throw new Error(msg + ` at pos ${cursor}`); };
   const checkeos = () => eos() && error('End of stream');
   const currc = () => source[cursor] || '';
   const nextc = () => checkeos() || source[cursor++];
   const testc = (c) =>  currc() === c;
   const match = (c) => testc(c) ? nextc() : false;
-  const mustc = (c) => testc(c) || error(`Missing '${c}' at pos '${cursor}'`);
-  const must = (c) => match(c) || error(`Missing '${c}' at pos '${cursor}'`);
+  const mustc = (c) => testc(c) || error(`Missing '${c} (mustc)'`);
+  const must = (c) => match(c) || error(`Missing '${c}' (must)`);
   const eos = () => cursor === source.length;
   const consume = (predicate) => {
     let chars = "";
