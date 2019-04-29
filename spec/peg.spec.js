@@ -187,8 +187,8 @@ describe("peg parser", () => {
       expect(p.eos()).toBe(true);
     });
     it("should parse comments", () => {
-      const p = parse("# foo bar baz  ");
-      expect(p.Spacing()).toEqual([]);
+      const p = parse("# a\n#b");
+      expect(p.Spacing()).toEqual(['\n', null]);
       expect(p.eos()).toBe(true);
     });
   });

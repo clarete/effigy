@@ -60,8 +60,14 @@ function scan(source) {
     catch (e) { cursor = saved; throw e; }
   };
   const Choice = (...a) => choice(...a.map(x => () => backtrack(x)));
+  const Not = (p) => {
+    const saved = cursor;
+    try { return not(p); }
+    finally { cursor = saved; }
+    throw new Error('Unreachable');
+  };
   return {
-    Choice, currc, consume, mustc, must, match, eos, error, nextc,
+    Not, Choice, currc, consume, mustc, must, match, eos, error, nextc,
   };
 }
 
@@ -132,8 +138,10 @@ function peg(s) {
   const CLOSE      = () => s.must(')') && Spacing();
   const DOT        = () => s.must('.') && Spacing() && sym('any');
 
-  const Spacing    = () => zeroOrMore(() => choice(Space, Comment));
-  const Comment    = () => [s.must('#'), zeroOrMore(() => not(EndOfLine) && Char()), EndOfLine()];
+  const Spacing    = () => zeroOrMore(() => s.Choice(Space, Comment));
+  const Comment    = () =>
+    s.must('#') && zeroOrMore(() => s.Not(EndOfLine) && Char()) &&
+    optional(EndOfLine);
   const Space      = () => s.Choice(( ) => s.must(' '), () => s.must('\t'), EndOfLine);
   const EndOfLine  = () => s.Choice(
     () => s.must('\r') && s.must('\n'),
