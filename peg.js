@@ -37,6 +37,9 @@ const not = (thing) => {
 // And Operator (&)
 const and = (thing) => not(() => not(thing));
 
+// Helper for flattening sequences
+const singleOrList = (x) => (Array.isArray(x) && x.length === 1 && x[0]) || x;
+
 // Basic machinery to parse things
 function scan(source) {
   let cursor = 0;
@@ -47,6 +50,10 @@ function scan(source) {
   const testc = (c) =>  currc() === c;
   const match = (c) => testc(c) ? nextc() : false;
   const mustc = (c) => testc(c) || error(`Missing '${c} (mustc)'`);
+  const range = ([a, b]) => {
+    if (currc() >= a && currc() <= b) return currc();
+    return error(`Missing '${currc()}' (range)`);
+  };
   const must = (c) => match(c) || error(`Missing '${c}' (must)`);
   const eos = () => cursor === source.length;
   const consume = (predicate) => {
@@ -66,15 +73,18 @@ function scan(source) {
     finally { cursor = saved; }
     throw new Error('Unreachable');
   };
+  const Range = (p) => singleOrList(Array.isArray(p)) ? range(p) : must(p);
+
   return {
-    Not, Choice, currc, consume, mustc, must, match, eos, error, nextc,
+    Not, Choice, Range,
+    currc, consume, mustc, must, match, eos, error, nextc,
   };
 }
 
 // PEG Parser
 function peg(s) {
-  // Helper for flattening sequence
-  const singleOrList = (x) => (Array.isArray(x) && x.length === 1 && x[0]) || x;
+  // If a list is the representation of Expression or Lambda
+  const isLambdaAst = (n) => Array.isArray(n) && n.length > 0 && typeof n[0] === 'symbol';
 
   // PEG Parser
   const Grammar = () => [Spacing(), oneOrMore(Definition), EndOfFile()][1];
@@ -111,13 +121,17 @@ function peg(s) {
     s.must(ch),
     Spacing()][1].join("");
   const Literal = () => s.Choice(_mkLiteral("'"), _mkLiteral('"'));
-  const Class = () => [sym('Class'), [
-    s.must('['),
-    zeroOrMore(() => not(() => s.mustc(']')) && Range()),
-    s.must(']'),
-    Spacing()][1]];
+  const Class = () => {
+    s.must('[');
+    const cls = singleOrList(zeroOrMore(() => s.Not(() => s.mustc(']')) && Range()));
+    s.must(']');
+    Spacing();
+    return typeof cls === 'string' || isLambdaAst(cls)
+      ? singleOrList(cls)
+      : [sym('choice'), ...cls];
+  };
 
-  const Range = () => s.Choice(() => [Char(), s.must('-'), Char()].filter((_, i) => i !== 1), Char);
+  const Range = () => s.Choice(() => [sym('range'), Char(), s.must('-'), Char()].filter((_, i) => i !== 2), Char);
   const Char = () => {
     if (s.match('\\')) {
       const eschr = ['n', 'r', 't', "'", '"', '[', ']', '\\'];
@@ -209,30 +223,37 @@ function pegc(g) {
 
   const match = (input) => {
     const s = scan(input);
+    const thunk = (v) => () => matchexpr(v);
+    // Recursive Eval
+    const matchexpr = (e) => {
+      if (typeof e === 'object' && Array.isArray(e)) {
+        // This is our lambda. It's an array where the first item is a
+        // symbol
+        if (typeof e[0] === 'symbol') {
+          const fn = env[e[0]];
+          if (!fn) throw new Error(`Can't find ${e[0].toString()}`);
+          if (e[0] === sym('range')) return fn(e.slice(1));
+          return fn(...e.slice(1).map(thunk));
+        }
+        // This is an actual list
+        return e.map(matchexpr);
+      } else if (typeof e === 'string') {
+        return s.must(e);
+      }
+      throw new Error('Unreachable');
+    };
     // Primitives + Non-Terminals
     const env = {
       [sym('zeroOrMore')]: zeroOrMore,
       [sym('oneOrMore')]: oneOrMore,
       [sym('choice')]: s.Choice,
+      [sym('range')]: s.Range,
       [sym('optional')]: optional,
       [sym('not')]: not,
       [sym('and')]: and,
       ...G,
     };
-    const V = n => env[n];
-    const thunk = (v) => () => matchexpr(v);
-    const matchexpr = (e) => {
-      if (typeof e === 'object' && Array.isArray(e)) {
-        // This is our lambda. It's an array where the first item is a
-        // symbol
-        if (typeof e[0] === 'symbol')
-          return V(e[0])(...e.slice(1).map(thunk));
-        // This is an actual list
-        return e.map(matchexpr);
-      } else if (typeof e === 'string')
-        return s.must(e);
-      return e;
-    };
+    // Kickoff eval
     return matchexpr(G[start]);
   };
   return { match };

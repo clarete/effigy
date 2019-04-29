@@ -14,6 +14,27 @@ const {
 } = require("../peg");
 
 describe("input parser", () => {
+  describe("#Class", () => {
+    it("should capture class of single char", () => {
+      const g = pegc("A <- [a]");
+      expect(g.match("a")).toEqual([['a']]);
+    });
+    it("should capture class of multi char", () => {
+      const g = pegc("A <- [ab]");
+      expect(g.match("a")).toEqual([['a']]);
+      expect(g.match("b")).toEqual([['b']]);
+    });
+    it("should capture class with single range", () => {
+      const g = pegc("A <- [a-z]");
+      expect(g.match("a")).toEqual([['a']]);
+      expect(g.match("f")).toEqual([['f']]);
+    });
+    it("should capture class with multi range", () => {
+      const g = pegc("A <- [a-z0-9]");
+      expect(g.match("a")).toEqual([['a']]);
+      expect(g.match("5")).toEqual([['5']]);
+    });
+  });
   describe("#Literal", () => {
     it("should capture literals", () => {
       const g = pegc("A <- 'b' 'a'* / 'c'");
@@ -120,7 +141,7 @@ describe("peg parser", () => {
     });
     it("should match Class", () => {
       const p = parse("[a-b]");
-      expect(p.Primary()).toEqual([sym('Class'), [['a', 'b']]]);
+      expect(p.Primary()).toEqual([sym('range'), 'a', 'b']);
       expect(p.eos()).toBe(true);
     });
     it("should match DOT", () => {
@@ -157,19 +178,48 @@ describe("peg parser", () => {
   describe("#Class", () => {
     it("should match single char classes", () => {
       const p = parse("[a]");
-      expect(p.Class()).toEqual([sym('Class'), ['a']]);
+      expect(p.Class()).toEqual('a');
       expect(p.eos()).toBe(true);
     });
-    it("should match range char classes", () => {
+    it("should match single range char classes", () => {
       const p = parse("[0-9]");
-      expect(p.Class()).toEqual([sym('Class'), [['0', '9']]]);
+      expect(p.Class()).toEqual([sym('range'), '0', '9']);
+      expect(p.eos()).toBe(true);
+    });
+    it("should match multi char classes", () => {
+      const p = parse("[@$]");
+      expect(p.Class()).toEqual([sym('choice'), '@', '$']);
+      expect(p.eos()).toBe(true);
+    });
+    it("should match multi range char classes", () => {
+      const p = parse("[a-z0-9]");
+      expect(p.Class()).toEqual([
+        sym('choice'),
+        [sym('range'), 'a', 'z'],
+        [sym('range'), '0', '9']
+      ]);
+      expect(p.eos()).toBe(true);
+    });
+    it("should match mix of multi & single range chars ", () => {
+      const p = parse("[a-z0-9_]");
+      expect(p.Class()).toEqual([
+        sym('choice'),
+        [sym('range'), 'a', 'z'],
+        [sym('range'), '0', '9'],
+        '_',
+      ]);
       expect(p.eos()).toBe(true);
     });
   });
   describe("#Range", () => {
-    it("should match single char range", () => {
+    it("should match single char", () => {
       const p = parse("f");
       expect(p.Range()).toEqual('f');
+      expect(p.eos()).toBe(true);
+    });
+    it("should match char range", () => {
+      const p = parse("0-9");
+      expect(p.Range()).toEqual([sym('range'), '0', '9']);
       expect(p.eos()).toBe(true);
     });
   });
