@@ -11,6 +11,7 @@ const {
   pegc,
   peg,
   sym,
+  prim,
 } = require("../peg");
 
 describe("input parser", () => {
@@ -92,7 +93,7 @@ describe("peg parser", () => {
     });
     it("should match more than one sequence", () => {
       const p = parse("'0' / '1' / '2' / '3'");
-      expect(p.Expression()).toEqual([sym('choice'), '0', '1', '2', '3']);
+      expect(p.Expression()).toEqual([prim('choice'), '0', '1', '2', '3']);
       expect(p.eos()).toBe(true);
     });
   });
@@ -111,12 +112,12 @@ describe("peg parser", () => {
     });
     it("should match Prefix Not", () => {
       const p = parse("!A");
-      expect(p.Prefix()).toEqual([sym('not'), sym('A')]);
+      expect(p.Prefix()).toEqual([prim('not'), sym('A')]);
       expect(p.eos()).toBe(true);
     });
     it("should match Prefix And", () => {
       const p = parse("&A");
-      expect(p.Prefix()).toEqual([sym('and'), sym('A')]);
+      expect(p.Prefix()).toEqual([prim('and'), sym('A')]);
       expect(p.eos()).toBe(true);
     });
   });
@@ -128,17 +129,17 @@ describe("peg parser", () => {
     });
     it("should match Suffix Star Operator", () => {
       const p = parse("A*");
-      expect(p.Suffix()).toEqual([sym('zeroOrMore'), sym('A')]);
+      expect(p.Suffix()).toEqual([prim('zeroOrMore'), sym('A')]);
       expect(p.eos()).toBe(true);
     });
     it("should match Suffix Plus Operator", () => {
       const p = parse("A+");
-      expect(p.Suffix()).toEqual([sym('oneOrMore'), sym('A')]);
+      expect(p.Suffix()).toEqual([prim('oneOrMore'), sym('A')]);
       expect(p.eos()).toBe(true);
     });
     it("should match Suffix Optional Operator", () => {
       const p = parse("A?");
-      expect(p.Suffix()).toEqual([sym('optional'), sym('A')]);
+      expect(p.Suffix()).toEqual([prim('optional'), sym('A')]);
       expect(p.eos()).toBe(true);
     });
   });
@@ -155,12 +156,12 @@ describe("peg parser", () => {
     });
     it("should match Class", () => {
       const p = parse("[a-b]");
-      expect(p.Primary()).toEqual([sym('range'), 'a', 'b']);
+      expect(p.Primary()).toEqual([prim('range'), 'a', 'b']);
       expect(p.eos()).toBe(true);
     });
     it("should match DOT", () => {
       const p = parse(".");
-      expect(p.Primary()).toEqual(sym('any'));
+      expect(p.Primary()).toEqual(prim('any'));
       expect(p.eos()).toBe(true);
     });
   });
@@ -197,29 +198,29 @@ describe("peg parser", () => {
     });
     it("should match single range char classes", () => {
       const p = parse("[0-9]");
-      expect(p.Class()).toEqual([sym('range'), '0', '9']);
+      expect(p.Class()).toEqual([prim('range'), '0', '9']);
       expect(p.eos()).toBe(true);
     });
     it("should match multi char classes", () => {
       const p = parse("[@$]");
-      expect(p.Class()).toEqual([sym('choice'), '@', '$']);
+      expect(p.Class()).toEqual([prim('choice'), '@', '$']);
       expect(p.eos()).toBe(true);
     });
     it("should match multi range char classes", () => {
       const p = parse("[a-z0-9]");
       expect(p.Class()).toEqual([
-        sym('choice'),
-        [sym('range'), 'a', 'z'],
-        [sym('range'), '0', '9']
+        prim('choice'),
+        [prim('range'), 'a', 'z'],
+        [prim('range'), '0', '9']
       ]);
       expect(p.eos()).toBe(true);
     });
     it("should match mix of multi & single range chars ", () => {
       const p = parse("[a-z0-9_]");
       expect(p.Class()).toEqual([
-        sym('choice'),
-        [sym('range'), 'a', 'z'],
-        [sym('range'), '0', '9'],
+        prim('choice'),
+        [prim('range'), 'a', 'z'],
+        [prim('range'), '0', '9'],
         '_',
       ]);
       expect(p.eos()).toBe(true);
@@ -233,7 +234,7 @@ describe("peg parser", () => {
     });
     it("should match char range", () => {
       const p = parse("0-9");
-      expect(p.Range()).toEqual([sym('range'), '0', '9']);
+      expect(p.Range()).toEqual([prim('range'), '0', '9']);
       expect(p.eos()).toBe(true);
     });
   });

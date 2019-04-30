@@ -83,13 +83,14 @@ function scan(source) {
 // PEG Parser
 function peg(s) {
   // If a list is the representation of Expression or Lambda
-  const isLambdaAst = (n) => Array.isArray(n) && n.length > 0 && typeof n[0] === 'symbol';
+  const isLambda = (n) => typeof n[0] === 'symbol' || n[0] instanceof PrimFun;
+  const isLambdaAst = (n) => Array.isArray(n) && n.length > 0 && isLambda(n);
 
   // PEG Parser
   const Grammar = () => [Spacing(), oneOrMore(Definition), EndOfFile()][1];
   const Definition = () => [Identifier(), LEFTARROW(), Expression()].filter((_, i) => i !== 1);
 
-  const mc = (l) => l.length === 1 ? l : [sym('choice')].concat(l);
+  const mc = (l) => l.length === 1 ? l : [prim('choice')].concat(l);
   const Expression = () => mc([Sequence()].concat(zeroOrMore(() => SLASH() && Sequence())));
   const Sequence = () => singleOrList(zeroOrMore(Prefix));
   const Prefix = () => {
@@ -111,7 +112,7 @@ function peg(s) {
     const isIdentCont = () => /[A-Za-z0-9_]/.test(s.currc());
     const identifier = isIdentStart() && s.consume(isIdentCont);
     Spacing();
-    if (identifier) return Symbol.for(identifier);
+    if (identifier) return sym(identifier);
     return s.error("Expected Identifier");
   };
   const _mkLiteral = (ch) => () => [
@@ -127,10 +128,10 @@ function peg(s) {
     Spacing();
     return typeof cls === 'string' || isLambdaAst(cls)
       ? singleOrList(cls)
-      : [sym('choice'), ...cls];
+      : [prim('choice'), ...cls];
   };
 
-  const Range = () => s.Choice(() => [sym('range'), Char(), s.must('-'), Char()].filter((_, i) => i !== 2), Char);
+  const Range = () => s.Choice(() => [prim('range'), Char(), s.must('-'), Char()].filter((_, i) => i !== 2), Char);
   const Char = () => {
     if (s.match('\\')) {
       const eschr = ['n', 'r', 't', "'", '"', '[', ']', '\\'];
@@ -142,14 +143,14 @@ function peg(s) {
 
   const LEFTARROW  = () => s.must("<") && s.must("-") && Spacing();
   const SLASH      = () => s.must('/') && Spacing();
-  const AND        = () => s.must('&') && Spacing() && sym('and');
-  const NOT        = () => s.must('!') && Spacing() && sym('not');
-  const QUESTION   = () => s.must('?') && Spacing() && sym('optional');
-  const STAR       = () => s.must('*') && Spacing() && sym('zeroOrMore');
-  const PLUS       = () => s.must('+') && Spacing() && sym('oneOrMore');
+  const AND        = () => s.must('&') && Spacing() && prim('and');
+  const NOT        = () => s.must('!') && Spacing() && prim('not');
+  const QUESTION   = () => s.must('?') && Spacing() && prim('optional');
+  const STAR       = () => s.must('*') && Spacing() && prim('zeroOrMore');
+  const PLUS       = () => s.must('+') && Spacing() && prim('oneOrMore');
   const OPEN       = () => s.must('(') && Spacing();
   const CLOSE      = () => s.must(')') && Spacing();
-  const DOT        = () => s.must('.') && Spacing() && sym('any');
+  const DOT        = () => s.must('.') && Spacing() && prim('any');
 
   const Spacing    = () => zeroOrMore(() => s.Choice(Space, Comment));
   const Comment    = () =>
@@ -217,46 +218,57 @@ function pegt(g) {
   return { grammar: m, start };
 }
 
+class PrimFun { constructor(n) { this.name = n; } }
+const prim = (n) => new PrimFun(n);
+
 function pegc(g) {
   const { grammar: G, start } = pegt(parse(g).Grammar());
 
   const match = (input) => {
     const s = scan(input);
     const thunk = (v) => () => matchexpr(v);
-    const V = (n) => {
-      const e = env[n];
-      if (e) return e;
-      throw new Error(`Can't find ${n.toString()}`);
+    const V = (e, k) => {
+      const i = e[k];
+      if (i) return i;
+      throw new Error(`Can't find ${k.toString()}`);
     };
+    // Primitives
+    const env = {
+      zeroOrMore,
+      oneOrMore,
+      choice: s.Choice,
+      range: s.Range,
+      optional,
+      not,
+      and,
+    };
+    const call = (fn, args) => fn(...args.slice(1).map(thunk));
+
+    const callprim = (e) => {
+      const fn = V(env, e[0].name);
+      if (e[0].name === 'range') return fn(e.slice(1));
+      return call(fn, e);
+    };
+
     // Recursive Eval
     const matchexpr = (e) => {
       if (typeof e === 'object' && Array.isArray(e)) {
         // This is our lambda. It's an array where the first item is a
-        // symbol
-        if (typeof e[0] === 'symbol') {
-          const fn = V(e[0]);
-          if (e[0] === sym('range')) return fn(e.slice(1));
-          return fn(...e.slice(1).map(thunk));
+        // symbol or a primitive
+        if (e[0] instanceof PrimFun) {
+          return callprim(e);
+        } else if (typeof e[0] === 'symbol') {
+          const fn = V(G, e[0]);
+          return call(fn, e);
         }
         // This is an actual list
         return e.map(matchexpr);
       } else if (typeof e === 'string') {
         return s.must(e);
       } else if (typeof e === 'symbol') {
-        return matchexpr(V(e));
+        return matchexpr(V(G, e));
       }
       throw new Error('Unreachable');
-    };
-    // Primitives + Non-Terminals
-    const env = {
-      [sym('zeroOrMore')]: zeroOrMore,
-      [sym('oneOrMore')]: oneOrMore,
-      [sym('choice')]: s.Choice,
-      [sym('range')]: s.Range,
-      [sym('optional')]: optional,
-      [sym('not')]: not,
-      [sym('and')]: and,
-      ...G,
     };
     // Kickoff eval
     return matchexpr(G[start]);
@@ -278,4 +290,5 @@ module.exports = {
   peg,
   pegc,
   sym,
+  prim,
 };
