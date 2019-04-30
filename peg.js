@@ -73,8 +73,7 @@ function scan(source) {
     finally { cursor = saved; }
     throw new Error('Unreachable');
   };
-  const Range = (p) => singleOrList(Array.isArray(p)) ? range(p) : must(p);
-
+  const Range = (p) => Array.isArray(p) ? range(p) : must(p);
   return {
     Not, Choice, Range,
     currc, consume, mustc, must, match, eos, error, nextc,
