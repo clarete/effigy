@@ -223,14 +223,18 @@ function pegc(g) {
   const match = (input) => {
     const s = scan(input);
     const thunk = (v) => () => matchexpr(v);
+    const V = (n) => {
+      const e = env[n];
+      if (e) return e;
+      throw new Error(`Can't find ${n.toString()}`);
+    };
     // Recursive Eval
     const matchexpr = (e) => {
       if (typeof e === 'object' && Array.isArray(e)) {
         // This is our lambda. It's an array where the first item is a
         // symbol
         if (typeof e[0] === 'symbol') {
-          const fn = env[e[0]];
-          if (!fn) throw new Error(`Can't find ${e[0].toString()}`);
+          const fn = V(e[0]);
           if (e[0] === sym('range')) return fn(e.slice(1));
           return fn(...e.slice(1).map(thunk));
         }
@@ -238,6 +242,8 @@ function pegc(g) {
         return e.map(matchexpr);
       } else if (typeof e === 'string') {
         return s.must(e);
+      } else if (typeof e === 'symbol') {
+        return matchexpr(V(e));
       }
       throw new Error('Unreachable');
     };
