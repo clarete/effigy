@@ -14,6 +14,20 @@ const {
 } = require("../peg");
 
 describe("input parser", () => {
+  describe("#Plus", () => {
+    it("should match a single element", () => {
+      const g = pegc("A <- 'a'+");
+      expect(g.match("a")).toEqual([[['a']]]);
+    });
+    it("should match multiple elements", () => {
+      const g = pegc("A <- 'a'+");
+      expect(g.match("aaaa")).toEqual([[['a', 'a', 'a', 'a']]]);
+    });
+    it("should match the digit example", () => {
+      const g = pegc("A <- [0-9]+");
+      expect(g.match("2019")).toEqual([[['2', '0', '1', '9']]]);
+    });
+  });
   describe("#Class", () => {
     it("should capture class of single char", () => {
       const g = pegc("A <- [a]");

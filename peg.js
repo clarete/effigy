@@ -51,7 +51,7 @@ function scan(source) {
   const match = (c) => testc(c) ? nextc() : false;
   const mustc = (c) => testc(c) || error(`Missing '${c} (mustc)'`);
   const range = ([a, b]) => {
-    if (currc() >= a && currc() <= b) return currc();
+    if (currc() >= a && currc() <= b) return nextc();
     return error(`Missing '${currc()}' (range)`);
   };
   const must = (c) => match(c) || error(`Missing '${c}' (must)`);
