@@ -1,0 +1,31 @@
+# Values
+Value           <- Number / String / BOOL
+Number          <- BIN / HEX / FLOAT / DEC
+String          <- DQUOTE (!DQUOTE .)* DQUOTE _
+
+# Lexcical Hierarchy
+
+## Values
+DEC             <- [0-9]+                  _
+FLOAT           <- [0-9]* '.' [0-9]+       _
+BIN             <- '0b' [0-1]+             _
+HEX             <- '0x' [0-9a-fA-F]+       _
+BOOL            <- ('true' / 'false')      _
+
+## Lexical Delimiters
+DQUOTE          <- '"'
+PARAMSEP        <- ',' _
+FORSEP          <- ';' _
+PROP            <- '(' _
+PRCL            <- ')' _
+CBOP            <- '{' _
+CBCL            <- '}' _
+NEGATIVE        <- '-' _
+ASSIGN          <- '=' _
+
+## Whitespace Handling
+_               <- (Space / Comment)*
+Comment         <- '#' (!EndOfLine .)* EndOfLine
+Space           <- ' ' / '\t' / EndOfLine
+EndOfLine       <- '\r\n' / '\n' / '\r'
+EndOfFile       <- !.

@@ -1,10 +1,12 @@
 const fs = require('fs');
 const path = require('path');
+const peg = require('./peg');
 
-function parse() {
+function parse(input) {
   // 1. Parse the PEG description
+  const grammar = fs.readFileSync(path.resolve('lang.peg')).toString();
   // 2. Match the PEG against source input
-  return 1;
+  return peg.pegc(grammar).match(input);
 }
 
 function compile(source, flags) {
