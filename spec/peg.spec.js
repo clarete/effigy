@@ -60,6 +60,10 @@ describe("input parser", () => {
       expect(g.match("baa")).toEqual([sym('A'), ['b', ['a', 'a']]]);
       expect(g.match("c")).toEqual([sym('A'), "c"]);
     });
+    it("should capture multichar literals", () => {
+      const g = pegc("A <- 'test'");
+      expect(g.match("test")).toEqual([sym('A'), 'test']);
+    });
   });
 });
 

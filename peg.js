@@ -280,7 +280,9 @@ function pegc(g) {
         // This is an actual list
         return cl(e.map(matchexpr));
       } else if (typeof e === 'string') {
-        return s.must(e);
+        const out = [];
+        for (const x of e) s.must(x) && out.push(x);
+        return out.join('');
       } else if (typeof e === 'symbol') {
         if (skipcapture(e)) {
           matchexpr(V(G, e));
