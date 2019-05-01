@@ -15,6 +15,13 @@ const {
 } = require("../peg");
 
 describe("input parser", () => {
+  describe("Actions", () => {
+    it("should execute action for Non-Terminal", () => {
+      const a = { [sym('Num')]: (_, x) => parseInt((Array.isArray(x) && x.join('') || x)) };
+      const g = pegc("Num <- [0-9]+", a);
+      expect(g.match("1")).toBe(1);
+    });
+  });
   describe("#Plus", () => {
     it("should match a single element", () => {
       const g = pegc("A <- 'a'+");

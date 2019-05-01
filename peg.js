@@ -231,8 +231,14 @@ class PrimFun { constructor(n) { this.name = n; } }
 const prim = (n) => new PrimFun(n);
 const sym = Symbol.for;
 
-function pegc(g) {
+function pegc(g, a) {
   const { grammar: G, start } = pegt(parse(g).Grammar());
+
+  const action = (id, output) => {
+    if (!a || typeof a[id] !== 'function')
+      return [id, output];
+    return a[id](id, output);
+  };
 
   const match = (input) => {
     const s = scan(input);
@@ -288,12 +294,12 @@ function pegc(g) {
           matchexpr(V(G, e));
           return null;
         }
-        return [e, cl(matchexpr(V(G, e)))];
+        return action(e, cl(matchexpr(V(G, e))));
       }
       throw new Error('Unreachable');
     };
     // Kickoff eval
-    return [start, matchexpr(G[start])];
+    return action(start, matchexpr(G[start]));
   };
   return { match };
 }
