@@ -56,7 +56,7 @@ describe("input parser", () => {
   describe("#Literal", () => {
     it("should capture literals", () => {
       const g = pegc("A <- 'b' 'a'* / 'c'");
-      expect(g.match("b")).toEqual([sym('A'), ['b', []]]);
+      expect(g.match("b")).toEqual([sym('A'), 'b']);
       expect(g.match("baa")).toEqual([sym('A'), ['b', ['a', 'a']]]);
       expect(g.match("c")).toEqual([sym('A'), "c"]);
     });

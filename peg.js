@@ -253,19 +253,29 @@ function pegc(g) {
       return call(fn, e);
     };
 
+    // Clean up remains of zeroOrMore successful match that doesn't
+    // consume any input and leaves a dangling []. There's probably a
+    // better way to do this.
+    const cleanList = (l) => {
+      if (!Array.isArray(l)) return l;
+      const out = l.filter(x => x);
+      return out.length > 0 ? out : null;
+    };
+    const cl = (l) => singleOrList(cleanList(l));
+
     // Recursive Eval
     const matchexpr = (e) => {
       if (Array.isArray(e) && e[0] instanceof PrimFun) {
         // This is our function. It's an array where the first item is
         // a symbol or a primitive
-        return singleOrList(callprim(e));
+        return cl(callprim(e));
       } else if (Array.isArray(e)) {
         // This is an actual list
-        return singleOrList(e.map(matchexpr));
+        return cl(e.map(matchexpr));
       } else if (typeof e === 'string') {
         return s.must(e);
       } else if (typeof e === 'symbol') {
-        return [e, singleOrList(matchexpr(V(G, e)))];
+        return [e, cl(matchexpr(V(G, e)))];
       }
       throw new Error('Unreachable');
     };
