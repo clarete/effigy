@@ -265,6 +265,11 @@ function pegc(g) {
     };
     const cl = (l) => singleOrList(cleanList(l));
 
+    // If the identifier starts with an underscore (_) this not quite
+    // elegant piece of code will prevent it from being captured in
+    // the parse tree. That doesn't apply to the first rule though.
+    const skipcapture = (s) => s.toString().match(/Symbol\(\_/);
+
     // Recursive Eval
     const matchexpr = (e) => {
       if (Array.isArray(e) && e[0] instanceof PrimFun) {
@@ -277,6 +282,10 @@ function pegc(g) {
       } else if (typeof e === 'string') {
         return s.must(e);
       } else if (typeof e === 'symbol') {
+        if (skipcapture(e)) {
+          matchexpr(V(G, e));
+          return null;
+        }
         return [e, cl(matchexpr(V(G, e)))];
       }
       throw new Error('Unreachable');
