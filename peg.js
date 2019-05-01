@@ -1,5 +1,3 @@
-const sym = Symbol.for;
-
 // --- PEG Primitives (Doesn't include lexer) ---
 
 // Star Operator (*)
@@ -221,22 +219,24 @@ function pegt(g) {
   return { grammar: m, start };
 }
 
+// Find a key within an object or error if it doesn't exist
+const V = (e, k) => {
+  const i = e[k];
+  if (i) return i;
+  throw new Error(`Can't find ${k.toString()}`);
+};
+
+// How regular values are separated from functions
 class PrimFun { constructor(n) { this.name = n; } }
 const prim = (n) => new PrimFun(n);
+const sym = Symbol.for;
 
 function pegc(g) {
   const { grammar: G, start } = pegt(parse(g).Grammar());
 
   const match = (input) => {
     const s = scan(input);
-    const thunk = (v) => () => matchexpr(v);
-    const V = (e, k) => {
-      const i = e[k];
-      if (i) return i;
-      throw new Error(`Can't find ${k.toString()}`);
-    };
-    // Primitives
-    const env = {
+    const prims = {
       zeroOrMore,
       oneOrMore,
       choice: s.Choice,
@@ -245,10 +245,12 @@ function pegc(g) {
       not,
       and,
     };
-    const call = (fn, args) => fn(...args.slice(1).map(thunk));
 
+    // How we call functions
+    const thunk = (v) => () => matchexpr(v);
+    const call = (fn, args) => fn(...args.slice(1).map(thunk));
     const callprim = (e) => {
-      const fn = V(env, e[0].name);
+      const fn = V(prims, e[0].name);
       if (e[0].name === 'range') return fn(e.slice(1));
       return call(fn, e);
     };
