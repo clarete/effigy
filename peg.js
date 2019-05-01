@@ -38,7 +38,10 @@ const not = (thing) => {
 const and = (thing) => not(() => not(thing));
 
 // Helper for flattening sequences
-const singleOrList = (x) => (Array.isArray(x) && x.length === 1 && x[0]) || x;
+const singleOrList = (x) => (Array.isArray(x) && // It's a list
+                            typeof x[0] !== 'symbol' && // And not a function
+                            x.length === 1
+                            && x[0]) || x;
 
 // Basic machinery to parse things
 function scan(source) {
@@ -82,9 +85,9 @@ function scan(source) {
 
 // PEG Parser
 function peg(s) {
-  // If a list is the representation of Expression or Lambda
-  const isLambda = (n) => typeof n[0] === 'symbol' || n[0] instanceof PrimFun;
-  const isLambdaAst = (n) => Array.isArray(n) && n.length > 0 && isLambda(n);
+  // If a list is the representation of Expression or Function
+  const isFunc = (n) => typeof n[0] === 'symbol' || n[0] instanceof PrimFun;
+  const isFuncAst = (n) => Array.isArray(n) && n.length > 0 && isFunc(n);
 
   // PEG Parser
   const Grammar = () => [Spacing(), oneOrMore(Definition), EndOfFile()][1];
@@ -126,7 +129,7 @@ function peg(s) {
     const cls = singleOrList(zeroOrMore(() => s.Not(() => s.mustc(']')) && Range()));
     s.must(']');
     Spacing();
-    return typeof cls === 'string' || isLambdaAst(cls)
+    return typeof cls === 'string' || isFuncAst(cls)
       ? singleOrList(cls)
       : [prim('choice'), ...cls];
   };
@@ -252,26 +255,22 @@ function pegc(g) {
 
     // Recursive Eval
     const matchexpr = (e) => {
-      if (typeof e === 'object' && Array.isArray(e)) {
-        // This is our lambda. It's an array where the first item is a
-        // symbol or a primitive
-        if (e[0] instanceof PrimFun) {
-          return callprim(e);
-        } else if (typeof e[0] === 'symbol') {
-          const fn = V(G, e[0]);
-          return call(fn, e);
-        }
+      if (Array.isArray(e) && e[0] instanceof PrimFun) {
+        // This is our function. It's an array where the first item is
+        // a symbol or a primitive
+        return singleOrList(callprim(e));
+      } else if (Array.isArray(e)) {
         // This is an actual list
-        return e.map(matchexpr);
+        return singleOrList(e.map(matchexpr));
       } else if (typeof e === 'string') {
         return s.must(e);
       } else if (typeof e === 'symbol') {
-        return matchexpr(V(G, e));
+        return [e, singleOrList(matchexpr(V(G, e)))];
       }
       throw new Error('Unreachable');
     };
     // Kickoff eval
-    return matchexpr(G[start]);
+    return [start, matchexpr(G[start])];
   };
   return { match };
 }

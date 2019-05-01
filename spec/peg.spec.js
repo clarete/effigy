@@ -18,44 +18,47 @@ describe("input parser", () => {
   describe("#Plus", () => {
     it("should match a single element", () => {
       const g = pegc("A <- 'a'+");
-      expect(g.match("a")).toEqual([[['a']]]);
+      expect(g.match("a")).toEqual([sym('A'), 'a']);
     });
     it("should match multiple elements", () => {
       const g = pegc("A <- 'a'+");
-      expect(g.match("aaaa")).toEqual([[['a', 'a', 'a', 'a']]]);
+      expect(g.match("aaaa")).toEqual([
+        sym('A'),
+        ['a', 'a', 'a', 'a'],
+      ]);
     });
     it("should match the digit example", () => {
       const g = pegc("A <- [0-9]+");
-      expect(g.match("2019")).toEqual([[['2', '0', '1', '9']]]);
+      expect(g.match("2019")).toEqual([sym('A'), ['2', '0', '1', '9']]);
     });
   });
   describe("#Class", () => {
     it("should capture class of single char", () => {
       const g = pegc("A <- [a]");
-      expect(g.match("a")).toEqual([['a']]);
+      expect(g.match("a")).toEqual([sym('A'), 'a']);
     });
     it("should capture class of multi char", () => {
       const g = pegc("A <- [ab]");
-      expect(g.match("a")).toEqual([['a']]);
-      expect(g.match("b")).toEqual([['b']]);
+      expect(g.match("a")).toEqual([sym('A'), 'a']);
+      expect(g.match("b")).toEqual([sym('A'), 'b']);
     });
     it("should capture class with single range", () => {
       const g = pegc("A <- [a-z]");
-      expect(g.match("a")).toEqual([['a']]);
-      expect(g.match("f")).toEqual([['f']]);
+      expect(g.match("a")).toEqual([sym('A'), 'a']);
+      expect(g.match("f")).toEqual([sym('A'), 'f']);
     });
     it("should capture class with multi range", () => {
       const g = pegc("A <- [a-z0-9]");
-      expect(g.match("a")).toEqual([['a']]);
-      expect(g.match("5")).toEqual([['5']]);
+      expect(g.match("a")).toEqual([sym('A'), 'a']);
+      expect(g.match("5")).toEqual([sym('A'), '5']);
     });
   });
   describe("#Literal", () => {
     it("should capture literals", () => {
       const g = pegc("A <- 'b' 'a'* / 'c'");
-      expect(g.match("b")).toEqual([['b', []]]);
-      expect(g.match("baa")).toEqual([['b', ['a', 'a']]]);
-      expect(g.match("c")).toEqual(['c']);
+      expect(g.match("b")).toEqual([sym('A'), ['b', []]]);
+      expect(g.match("baa")).toEqual([sym('A'), ['b', ['a', 'a']]]);
+      expect(g.match("c")).toEqual([sym('A'), "c"]);
     });
   });
 });
