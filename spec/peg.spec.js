@@ -12,7 +12,92 @@ const {
   peg,
   sym,
   prim,
+  lst,
 } = require("../peg");
+
+describe("action driver", () => {
+  it("should gen some code", () => {
+    const fj = (x) => Array.isArray(x) && x.join('') || x;
+
+    const pa = {
+      [sym('N')]: (_, x) => parseInt(fj(x), 10),
+      [sym('T')]: (_, x) => x,
+      [sym('P')]: (_, x) => '+',
+    };
+    const pg = pegc(
+      'T <- N ((P / M) N)*\n' +
+      'N <- [0-9]+        \n' +
+      'P <- "+"           \n' +
+      'M <- "-"           \n',
+      pa);
+
+    const ta = { [sym('S')]: (_, x) => fj(x) };
+    const tg = pegc(
+      'T <- { "+" V }            \n' +
+      '   / { "+" }              \n' +
+      '   / { V T }              \n' +
+      '   / V                    \n' +
+      'V <- !{ .* }              \n',
+      ta);
+
+    console.log('\n----------------------------------');
+    // console.log(pg.match('10'));
+    expect(pg.match('10')).toBe(10);
+    console.log(tg.matchl(pg.match('10')));
+    expect(tg.match(pg.match('10'))).toEqual([sym('T'), [sym('V'), true]]);
+    // expect(tg.match(pg.match('10'))).toEqual([sym('T'), [sym('V'), 10]]);
+    console.log('----------------------------------');
+    // console.log(tg.matchl(lst('+')));
+    console.log(tg.matchl(['+', 10]));
+
+    console.log('----------------------------------');
+    console.log(pg.match('1+23'));
+    // console.log(tg.matchl(pg.match('1+23')));
+    return;
+  });
+});
+
+fdescribe("list matcher", () => {
+  it("should parse atoms", () => {
+    const g = pegc('S <- !{ .* }');
+    expect(g.matchl("A")).toEqual([sym('S'), "A"]);
+    expect(g.matchl(true)).toEqual([sym('S'), true]);
+    expect(g.matchl(10)).toEqual([sym('S'), 10]);
+    // Do I need this?
+    // expect(g.matchl(sym('foo'))).toEqual([sym('S'), sym('foo')]);
+  });
+  it("should parse atom inside list", () => {
+    const g = pegc('S <- { "A" }');
+    expect(g.matchl(["A"])).toEqual([sym('S'), lst("A")]);
+  });
+  it("should parse multiple atoms inside list", () => {
+    const g = pegc('S <- { "a" "b" "c" }');
+    expect(g.matchl(["a", "b", "c"])).toEqual(
+      [sym('S'), lst(["a", "b", "c"])]);
+  });
+  it("should parse lists recursively", () => {
+    const g = pegc('S <- { "a" { "b" { "c" } } }');
+    expect(g.matchl(["a", ["b", ["c"]]])).toEqual(
+      [sym('S'), lst(['a', lst(['b', lst('c')])])]);
+  });
+  it("should parse lists recursively defined in other non-terminals", () => {
+    const g = pegc(
+      'S <- { "a" T }  \n' +
+      'T <- { "b" U }  \n' +
+      'U <- { "c" V }  \n' +
+      'V <- { "d" }    \n'
+    );
+    expect(g.matchl(["a", ["b", ["c", ["d"]]]])).toEqual(
+      [sym('S'),
+       lst(['a', [sym('T'), lst(['b', [sym('U'), lst(['c', [sym('V'), lst('d')] ]) ] ]) ] ]) ]
+      );
+  });
+
+  // it("should parse atom inside list", () => {
+  //   const g = pegc('S <- { "A" }', { S: (x) => `y${x}y` });
+  //   expect(g.matchl(["A"])).toBe("yAy");
+  // });
+});
 
 describe("input parser", () => {
   describe("Actions", () => {
@@ -179,8 +264,14 @@ describe("peg parser", () => {
       expect(p.eos()).toBe(true);
     });
     it("should match lists", () => {
-      const p = parse("{ . }");
-      expect(p.Primary()).toEqual([prim('list'), prim('any')]);
+      const p = parse("{ a }");
+      expect(p.Primary()).toEqual([prim('list'), [sym('a')]]);
+      expect(p.eos()).toBe(true);
+    });
+    it("should match lists with multiple items", () => {
+      const p = parse("{ a b }");
+      expect(p.Primary())
+        .toEqual([prim('list'), [sym('a'), sym('b')]]);
       expect(p.eos()).toBe(true);
     });
   });

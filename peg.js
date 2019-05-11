@@ -36,10 +36,13 @@ const not = (thing) => {
 const and = (thing) => not(() => not(thing));
 
 // Helper for flattening sequences
-const singleOrList = (x) => (Array.isArray(x) && // It's a list
-                            typeof x[0] !== 'symbol' && // And not a function
-                            x.length === 1
-                            && x[0]) || x;
+const singleOrList = (x) => ((
+  Array.isArray(x)         &&   // It's a list
+  !(x instanceof List)     &&   // It's not a user list
+  typeof x[0] !== 'symbol' &&   // And not a function
+  x.length === 1           &&   // And has a single element
+  x[0])                    ||   // Then return first item
+  x);                           // Or return
 
 // Basic machinery to parse things
 function scan(source) {
@@ -76,6 +79,62 @@ function scan(source) {
   };
 }
 
+const car = ([h, ...t]) => h;
+const cdr = ([h, ...t]) => t;
+const consp = Array.isArray;
+
+function scanl(tree) {
+  let current = tree;
+
+  const error = (m) => { throw new Error(m); };
+  const eos = () => current === undefined;
+  const checkeos = () => eos() && error('End of stream');
+  const match = (c) => testc(c) ? nextc() : false;
+  const mustc = (c) => testc(c) || error(`Missing '${c} (mustc)'`);
+  const must = (c) => match(c) ||
+    error(`Expected '${c}' (${typeof c}), ` +
+          `got '${current}' (${typeof current})`);
+
+  const testc = (c) => currc() === c;
+  const nextc = () => {
+    checkeos();
+    current = consp(car(cdr(current))) ?
+      car(cdr(current)) : cdr(current);
+    return current;
+  };
+
+  const depth = [];
+  const inlst = () => consp(depth[depth.length-1]);
+  const currc = () => inlst() ? car(current) : current;
+
+  const list = (fn) => {
+    if (!consp(current)) error("Expected list");
+    depth.push(current);
+    const r = fn();
+    current = depth.pop();
+    return lst(r);
+  };
+
+  const backtrack = (exp) => {
+    const saved = current;
+    try { return exp(); }
+    catch (e) { current = saved; throw e; }
+  };
+
+  const Choice = (...a) => choice(...a.map(x => () => backtrack(x)));
+
+  const Not = (p) => {
+    const saved = current;
+    try { return not(p) && current; }
+    catch (e) { current = saved; throw e; }
+  };
+
+  return {
+    Not, Choice, list,
+    currc, must, mustc, error,
+  };
+}
+
 // PEG Parser
 function peg(s) {
   // If a list is the representation of Expression or Function
@@ -99,7 +158,7 @@ function peg(s) {
   };
   const Primary = () => s.Choice(
     () => [Identifier(), not(LEFTARROW)][0],
-    () => [OPEN(), Expression(), CLOSE()][1],
+    () => [OPEN(), singleOrList(Expression()), CLOSE()][1],
     List, Literal, Class, DOT);
   const List = () =>
     [prim('list'),
@@ -232,8 +291,12 @@ class PrimFun { constructor(n) { this.name = n; } }
 const prim = (n) => new PrimFun(n);
 const sym = Symbol.for;
 
+// How lists are separated from expressions
+class List extends Array {}
+const lst = (l) => new List(l);
+
 function pegc(g, a) {
-  const { grammar: G, start } = pegt(parse(g).Grammar());
+  const { grammar: G, start } = pegt(peg(scan(g)).Grammar());
 
   const action = (id, output) => {
     if (!a || typeof a[id] !== 'function')
@@ -241,16 +304,16 @@ function pegc(g, a) {
     return a[id](id, output);
   };
 
-  const match = (input) => {
-    const s = scan(input);
+  const match = (s) => {
     const prims = {
       zeroOrMore,
       oneOrMore,
+      optional,
       choice: s.Choice,
       range: s.Range,
-      optional,
-      not,
+      not: s.Not,
       and,
+      list: s.list,
     };
 
     // How we call functions
@@ -302,7 +365,10 @@ function pegc(g, a) {
     // Kickoff eval
     return action(start, matchexpr(G[start]));
   };
-  return { match };
+  return {
+    match: (s) => match(scan(s)),
+    matchl: (l) => match(scanl(l)),
+  };
 }
 
 module.exports = {
@@ -319,5 +385,6 @@ module.exports = {
   peg,
   pegc,
   sym,
+  lst,
   prim,
 };
