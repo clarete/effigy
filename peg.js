@@ -100,7 +100,10 @@ function peg(s) {
   const Primary = () => s.Choice(
     () => [Identifier(), not(LEFTARROW)][0],
     () => [OPEN(), Expression(), CLOSE()][1],
-    Literal, Class, DOT);
+    List, Literal, Class, DOT);
+  const List = () =>
+    [prim('list'),
+     [LSTOPEN(), singleOrList(Expression()), LSTCLOSE()][1]];
 
   // # Lexical syntax
   const Identifier = () => {
@@ -147,6 +150,9 @@ function peg(s) {
   const OPEN       = () => s.must('(') && Spacing();
   const CLOSE      = () => s.must(')') && Spacing();
   const DOT        = () => s.must('.') && Spacing() && prim('any');
+
+  const LSTOPEN    = () => s.must('{') && Spacing();
+  const LSTCLOSE   = () => s.must('}') && Spacing();
 
   const Spacing    = () => zeroOrMore(() => s.Choice(Space, Comment));
   const Comment    = () =>

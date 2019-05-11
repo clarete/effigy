@@ -178,6 +178,11 @@ describe("peg parser", () => {
       expect(p.Primary()).toEqual(prim('any'));
       expect(p.eos()).toBe(true);
     });
+    it("should match lists", () => {
+      const p = parse("{ . }");
+      expect(p.Primary()).toEqual([prim('list'), prim('any')]);
+      expect(p.eos()).toBe(true);
+    });
   });
   describe("#Identifier", () => {
     it("should match an identifier", () => {
