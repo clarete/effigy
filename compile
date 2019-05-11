@@ -22,7 +22,7 @@ function parsecmd() {
 function main() {
   const params = parsecmd();
   for (const file of params.files) {
-    lang.compileFile(file, params.flags);
+    lang.translateFile(file, params.flags);
   }
 }
 
