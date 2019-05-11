@@ -57,11 +57,6 @@ function scan(source) {
   };
   const must = (c) => match(c) || error(`Missing '${c}' (must)`);
   const eos = () => cursor === source.length;
-  const consume = (predicate) => {
-    let chars = "";
-    while (predicate()) chars += nextc();
-    return chars;
-  };
   const backtrack = (exp) => {
     const saved = cursor;
     try { return exp(); }
@@ -77,7 +72,7 @@ function scan(source) {
   const Range = (p) => Array.isArray(p) ? range(p) : must(p);
   return {
     Not, Choice, Range,
-    currc, consume, mustc, must, match, eos, error, nextc,
+    currc, mustc, must, match, eos, error, nextc,
   };
 }
 
@@ -110,8 +105,8 @@ function peg(s) {
   // # Lexical syntax
   const Identifier = () => {
     const isIdentStart = () => /[A-Za-z_]/.test(s.currc());
-    const isIdentCont = () => /[A-Za-z0-9_]/.test(s.currc());
-    const identifier = isIdentStart() && s.consume(isIdentCont);
+    const isIdentCont = () => /[A-Za-z0-9_]/.test(s.currc()) && s.nextc() || s.error('End');
+    const identifier = isIdentStart() && zeroOrMore(isIdentCont).join("");
     Spacing();
     if (identifier) return sym(identifier);
     return s.error("Expected Identifier");
