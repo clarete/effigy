@@ -57,7 +57,7 @@ describe("action driver", () => {
   });
 });
 
-fdescribe("list matcher", () => {
+describe("list matcher", () => {
   it("should parse atoms", () => {
     const g = pegc('S <- !{ .* }');
     expect(g.matchl("A")).toEqual([sym('S'), "A"]);
