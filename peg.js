@@ -111,13 +111,9 @@ function scanl(tree) {
   };
   const nextc = () => {
     checkeos();
-    if (depth >= 0) {
-      let t = current, i = depth;
-      while (i > 2) { t = car(t); i--; }
-      t[0] = cdr(t[0]);
-    } else {
-      current = cdr(current);
-    }
+    let t = current, i = depth;
+    while (i > 2) { t = car(t); i--; }
+    t[0] = cdr(t[0]);
     return currc();
   };
 

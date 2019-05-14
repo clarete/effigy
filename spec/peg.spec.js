@@ -38,20 +38,12 @@ describe("action driver", () => {
       'V <- !{ .* } .            \n',
       ta);
 
-    const tg0 = pegc(
-      'T <-  { "+" V }           \n' +
-      'V <- !{ .* } .            \n',
-      ta);
-
     // expect(pg.match('10')).toBe(10);
     // expect(tg.matchl(pg.match('10'))).toEqual([sym('T'), [sym('V'), 10]]);
     // console.log('\n----------------------------------');
-    const matched = pg.match('1+23');
+    const matched = pg.match('12+345+8');
     console.log(matched);
     console.log('----------------------------------');
-    // console.log(tg.matchl(['+', 10]));
-    // console.log(tg.matchl(lst(['+', 10])));
-    // console.log(pg.match('1+23'));
     console.log(tg.matchl(matched));
     return;
   });
@@ -64,7 +56,7 @@ describe("list matcher", () => {
   });
   it("should parse atoms", () => {
     const g = pegc('S <- !{ .* } .');
-    // expect(() => g.matchl([])).toThrow(new Error);
+    expect(() => g.matchl([])).toThrow(new Error);
     expect(g.matchl("A")).toEqual([sym('S'), "A"]);
     // expect(g.matchl(true)).toEqual([sym('S'), true]);
     // expect(g.matchl(10)).toEqual([sym('S'), 10]);
