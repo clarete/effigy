@@ -33,38 +33,47 @@ describe("action driver", () => {
 
     const ta = { [sym('S')]: (_, x) => fj(x) };
     const tg = pegc(
-      'T <- { "+" V }            \n' +
-      '   / { "+" }              \n' +
-      '   / { V T }              \n' +
-      '   / V                    \n' +
-      'V <- !{ .* }              \n',
+      'T <- S / { V S } / V      \n' +
+      'S <- { "+" V }            \n' +
+      'V <- !{ .* } .            \n',
       ta);
 
-    console.log('\n----------------------------------');
-    // console.log(pg.match('10'));
-    expect(pg.match('10')).toBe(10);
-    console.log(tg.matchl(pg.match('10')));
-    expect(tg.match(pg.match('10'))).toEqual([sym('T'), [sym('V'), true]]);
-    // expect(tg.match(pg.match('10'))).toEqual([sym('T'), [sym('V'), 10]]);
-    console.log('----------------------------------');
-    // console.log(tg.matchl(lst('+')));
-    console.log(tg.matchl(['+', 10]));
+    const tg0 = pegc(
+      'T <-  { "+" V }           \n' +
+      'V <- !{ .* } .            \n',
+      ta);
 
+    // expect(pg.match('10')).toBe(10);
+    // expect(tg.matchl(pg.match('10'))).toEqual([sym('T'), [sym('V'), 10]]);
+    // console.log('\n----------------------------------');
+    const matched = pg.match('1+23');
+    console.log(matched);
     console.log('----------------------------------');
-    console.log(pg.match('1+23'));
-    // console.log(tg.matchl(pg.match('1+23')));
+    // console.log(tg.matchl(['+', 10]));
+    // console.log(tg.matchl(lst(['+', 10])));
+    // console.log(pg.match('1+23'));
+    console.log(tg.matchl(matched));
     return;
   });
 });
 
 describe("list matcher", () => {
-  it("should parse atoms", () => {
-    const g = pegc('S <- !{ .* }');
+  it("should match the any operator", () => {
+    const g = pegc('S <- .');
     expect(g.matchl("A")).toEqual([sym('S'), "A"]);
-    expect(g.matchl(true)).toEqual([sym('S'), true]);
-    expect(g.matchl(10)).toEqual([sym('S'), 10]);
+  });
+  it("should parse atoms", () => {
+    const g = pegc('S <- !{ .* } .');
+    // expect(() => g.matchl([])).toThrow(new Error);
+    expect(g.matchl("A")).toEqual([sym('S'), "A"]);
+    // expect(g.matchl(true)).toEqual([sym('S'), true]);
+    // expect(g.matchl(10)).toEqual([sym('S'), 10]);
     // Do I need this?
     // expect(g.matchl(sym('foo'))).toEqual([sym('S'), sym('foo')]);
+  });
+  it("should matchl an empty list", () => {
+    const g = pegc('S <- { }');
+    expect(g.matchl([])).toEqual([sym('S'), null]);
   });
   it("should parse atom inside list", () => {
     const g = pegc('S <- { "A" }');
@@ -88,9 +97,14 @@ describe("list matcher", () => {
       'V <- { "d" }    \n'
     );
     expect(g.matchl(["a", ["b", ["c", ["d"]]]])).toEqual(
-      [sym('S'),
-       lst(['a', [sym('T'), lst(['b', [sym('U'), lst(['c', [sym('V'), lst('d')] ]) ] ]) ] ]) ]
-      );
+      [sym('S'), lst(['a', [sym('T'), lst(['b', [sym('U'), lst(['c', [sym('V'), lst('d')]])]])]])]);
+  });
+  it("should match atom recursively", () => {
+    const g = pegc(
+      'S <- { "a" A }    \n'+
+      'A <- !{ .* } .    \n');
+    expect(g.matchl(["a", 10])).toEqual(
+      [sym('S'), lst(['a', [sym('A'), 10]])]);
   });
 
   // it("should parse atom inside list", () => {
@@ -155,6 +169,18 @@ describe("input parser", () => {
     it("should capture multichar literals", () => {
       const g = pegc("A <- 'test'");
       expect(g.match("test")).toEqual([sym('A'), 'test']);
+    });
+  });
+  describe("#DOT", () => {
+    it("should match anything but `b'", () => {
+      const g = pegc("A <- !'b' .");
+      expect(g.match("a")).toEqual([sym('A'), 'a']);
+      expect(g.match("c")).toEqual([sym('A'), 'c']);
+      expect(() => g.match("b")).toThrow(new Error);
+    });
+    it("should match any char", () => {
+      const g = pegc("A <- .");
+      expect(g.match("t")).toEqual([sym('A'), 't']);
     });
   });
 });

@@ -59,6 +59,7 @@ function scan(source) {
     return error(`Missing '${currc()}' (range)`);
   };
   const must = (c) => match(c) || error(`Missing '${c}' (must)`);
+  const any = () => checkeos() || nextc();
   const eos = () => cursor === source.length;
   const backtrack = (exp) => {
     const saved = cursor;
@@ -68,14 +69,13 @@ function scan(source) {
   const Choice = (...a) => choice(...a.map(x => () => backtrack(x)));
   const Not = (p) => {
     const saved = cursor;
-    try { return not(p); }
-    finally { cursor = saved; }
-    throw new Error('Unreachable');
+    try { not(p); return pred(); }
+    catch (e) { cursor = saved; throw e; }
   };
   const Range = (p) => Array.isArray(p) ? range(p) : must(p);
   return {
     Not, Choice, Range,
-    currc, mustc, must, match, eos, error, nextc,
+    currc, mustc, must, match, eos, error, nextc, any,
   };
 }
 
@@ -85,33 +85,53 @@ const consp = Array.isArray;
 
 function scanl(tree) {
   let current = tree;
+  let depth = 1;
 
   const error = (m) => { throw new Error(m); };
-  const eos = () => current === undefined;
+  const eos = () => currc() === undefined;
   const checkeos = () => eos() && error('End of stream');
-  const match = (c) => testc(c) ? nextc() : false;
-  const mustc = (c) => testc(c) || error(`Missing '${c} (mustc)'`);
+  const testc = (c) => currc() === c;
+  const match = (c) => {
+    if (testc(c)) {
+      const c = currc();
+      nextc();
+      return c;
+    }
+    return false;
+  };
   const must = (c) => match(c) ||
     error(`Expected '${c}' (${typeof c}), ` +
-          `got '${current}' (${typeof current})`);
+          `got '${currc()}' (${typeof currc()})`);
 
-  const testc = (c) => currc() === c;
+  // const any = () => checkeos() || nextc();
+  const any = () => {
+    const curr = currc();
+    nextc();
+    return curr;
+  };
   const nextc = () => {
     checkeos();
-    current = consp(car(cdr(current))) ?
-      car(cdr(current)) : cdr(current);
-    return current;
+    if (depth >= 0) {
+      let t = current, i = depth;
+      while (i > 2) { t = car(t); i--; }
+      t[0] = cdr(t[0]);
+    } else {
+      current = cdr(current);
+    }
+    return currc();
   };
 
-  const depth = [];
-  const inlst = () => consp(depth[depth.length-1]);
-  const currc = () => inlst() ? car(current) : current;
+  const currc = () => {
+    let t = current, i = depth;
+    while (i > 0) { t = car(t); i--; }
+    return t;
+  };
 
   const list = (fn) => {
-    if (!consp(current)) error("Expected list");
-    depth.push(current);
+    if (!consp(currc())) error("Expected list");
+    depth++;
     const r = fn();
-    current = depth.pop();
+    depth--;
     return lst(r);
   };
 
@@ -125,13 +145,13 @@ function scanl(tree) {
 
   const Not = (p) => {
     const saved = current;
-    try { return not(p) && current; }
+    try { return not(p) && pred(); }
     catch (e) { current = saved; throw e; }
   };
 
   return {
-    Not, Choice, list,
-    currc, must, mustc, error,
+    Not, Choice, any, list,
+    currc, must, error,
   };
 }
 
@@ -293,7 +313,11 @@ const sym = Symbol.for;
 
 // How lists are separated from expressions
 class List extends Array {}
-const lst = (l) => new List(l);
+const lst = (l) => consp(l) ? new List(...l) : new List(l);
+
+// CLean up predicates from parse tree
+class Predicate {}
+const pred = () => new Predicate();
 
 function pegc(g, a) {
   const { grammar: G, start } = pegt(peg(scan(g)).Grammar());
@@ -314,6 +338,7 @@ function pegc(g, a) {
       not: s.Not,
       and,
       list: s.list,
+      any: s.any,
     };
 
     // How we call functions
@@ -342,13 +367,15 @@ function pegc(g, a) {
 
     // Recursive Eval
     const matchexpr = (e) => {
-      if (Array.isArray(e) && e[0] instanceof PrimFun) {
+      if (e instanceof PrimFun) {
+        return cl(V(prims, e.name)());
+      } else if (Array.isArray(e) && e[0] instanceof PrimFun) {
         // This is our function. It's an array where the first item is
         // a symbol or a primitive
         return cl(callprim(e));
       } else if (Array.isArray(e)) {
         // This is an actual list
-        return cl(e.map(matchexpr));
+        return cl(e.map(matchexpr).filter(x => !(x instanceof Predicate)));
       } else if (typeof e === 'string') {
         const out = [];
         for (const x of e) s.must(x) && out.push(x);
@@ -367,7 +394,7 @@ function pegc(g, a) {
   };
   return {
     match: (s) => match(scan(s)),
-    matchl: (l) => match(scanl(l)),
+    matchl: (l) => match(scanl([l])),
   };
 }
 
