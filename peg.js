@@ -85,7 +85,6 @@ const consp = Array.isArray;
 
 function scanl(tree) {
   let current = tree;
-  let depth = 1;
 
   const error = (m) => { throw new Error(m); };
   const eos = () => currc() === undefined;
@@ -99,35 +98,47 @@ function scanl(tree) {
     }
     return false;
   };
-  const must = (c) => match(c) ||
-    error(`Expected '${c}' (${typeof c}), ` +
-          `got '${currc()}' (${typeof currc()})`);
+  const must = (c) => {
+    console.log(indent() + 'MUST', c, currc());
+    return match(c) ||
+      error(`Expected '${c}' (${typeof c}), ` +
+            `got '${currc()}' (${typeof currc()})`);
+  };
 
-  // const any = () => checkeos() || nextc();
+  const currc = () => car(current);
+
   const any = () => {
     const curr = currc();
     nextc();
     return curr;
   };
+
   const nextc = () => {
     checkeos();
-    let t = current, i = depth;
-    while (i > 2) { t = car(t); i--; }
-    t[0] = cdr(t[0]);
-    return currc();
+    current = cdr(current);
+    return current;
   };
 
-  const currc = () => {
-    let t = current, i = depth;
-    while (i > 0) { t = car(t); i--; }
-    return t;
-  };
+  const listStack = [];
+  let idc = -1;
+  const indent = () =>
+    Array.from({ length: idc }, _ => "    ").join('');
+  const isTheEmptyList = (l) =>
+    Boolean(consp(l) && l.length === 0);
 
   const list = (fn) => {
-    if (!consp(currc())) error("Expected list");
-    depth++;
+    idc++;
+    console.log(indent() + 'LIST.0', current, listStack);
+    if (!consp(current)) error("Expected list");
+    listStack.push(cdr(current));
+    current = car(current);
+    console.log(indent() + 'LIST.1', current, listStack);
     const r = fn();
-    depth--;
+    console.log(indent() + 'LIST.2', current, listStack);
+    if (!isTheEmptyList(current)) error("Unmatched sublist");
+    current = listStack.pop();
+    console.log(indent() + 'LIST.3', current, listStack);
+    idc--;
     return lst(r);
   };
 
