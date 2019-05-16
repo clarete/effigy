@@ -108,6 +108,7 @@ function scanl(tree) {
   const currc = () => car(current);
 
   const any = () => {
+    console.log(indent() + 'ANY', currc());
     const curr = currc();
     nextc();
     return curr;
@@ -119,7 +120,7 @@ function scanl(tree) {
     return current;
   };
 
-  const listStack = [];
+  let listStack = [];
   let idc = -1;
   const indent = () =>
     Array.from({ length: idc }, _ => "    ").join('');
@@ -129,7 +130,7 @@ function scanl(tree) {
   const list = (fn) => {
     idc++;
     console.log(indent() + 'LIST.0', current, listStack);
-    if (!consp(current)) error("Expected list");
+    if (!consp(currc())) error("Expected list");
     listStack.push(cdr(current));
     current = car(current);
     console.log(indent() + 'LIST.1', current, listStack);
@@ -152,8 +153,13 @@ function scanl(tree) {
 
   const Not = (p) => {
     const saved = current;
-    try { return not(p) && pred(); }
-    catch (e) { current = saved; throw e; }
+    // const savedStack = listStack.slice();
+    console.log('ENTER NOT', listStack, current);
+    try {
+      const rez = not(p) && pred();
+      console.log('END OF NOT', current, listStack);
+      return rez;
+    } finally { current = saved; }
   };
 
   return {

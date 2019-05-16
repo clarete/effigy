@@ -33,19 +33,18 @@ describe("action driver", () => {
 
     const ta = { [sym('S')]: (_, x) => fj(x) };
     const tg = pegc(
-      'T <- S / { V S } / V      \n' +
-      'S <- { "+" V }            \n' +
-      'V <- !{ .* } .            \n',
+      'T <- { V { { "+" V }* } }    \n' +
+      'V <- !{ .* } .               \n',
       ta);
 
-    // expect(pg.match('10')).toBe(10);
-    // expect(tg.matchl(pg.match('10'))).toEqual([sym('T'), [sym('V'), 10]]);
-    // console.log('\n----------------------------------');
     const matched = pg.match('12+345+8');
-    console.log(matched);
-    console.log('----------------------------------');
-    console.log(tg.matchl(matched));
-    return;
+    expect(tg.matchl(matched)).toEqual([
+      sym('T'),
+      lst([
+        [sym('V'), 12],
+        lst([
+          lst([ '+', [ sym('V'), 345 ] ]),
+          lst([ '+', [ sym('V'), 8 ] ]) ]) ]) ]);
   });
 });
 
@@ -56,10 +55,10 @@ describe("list matcher", () => {
   });
   it("should parse atoms", () => {
     const g = pegc('S <- !{ .* } .');
-    expect(() => g.matchl([])).toThrow(new Error);
+    // expect(() => g.matchl([])).toThrow(new Error);
     expect(g.matchl("A")).toEqual([sym('S'), "A"]);
-    // expect(g.matchl(true)).toEqual([sym('S'), true]);
-    // expect(g.matchl(10)).toEqual([sym('S'), 10]);
+    expect(g.matchl(true)).toEqual([sym('S'), true]);
+    expect(g.matchl(10)).toEqual([sym('S'), 10]);
     // Do I need this?
     // expect(g.matchl(sym('foo'))).toEqual([sym('S'), sym('foo')]);
   });
