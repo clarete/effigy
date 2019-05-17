@@ -39,46 +39,46 @@ describe("action driver", () => {
 
     const matched = pg.match('12+345+8');
     expect(tg.matchl(matched)).toEqual([
-      sym('T'),
+      'T',
       lst([
-        [sym('V'), 12],
+        ['V', 12],
         lst([
-          lst([ '+', [ sym('V'), 345 ] ]),
-          lst([ '+', [ sym('V'), 8 ] ]) ]) ]) ]);
+          lst(['+', ['V', 345 ] ]),
+          lst(['+', ['V', 8 ] ]) ]) ]) ]);
   });
 });
 
 describe("list matcher", () => {
   it("should match the any operator", () => {
     const g = pegc('S <- .');
-    expect(g.matchl("A")).toEqual([sym('S'), "A"]);
+    expect(g.matchl("A")).toEqual(['S', "A"]);
   });
   it("should parse atoms", () => {
     const g = pegc('S <- !{ .* } .');
     expect(() => g.matchl([])).toThrow(new Error);
-    expect(g.matchl("A")).toEqual([sym('S'), "A"]);
-    expect(g.matchl(true)).toEqual([sym('S'), true]);
-    expect(g.matchl(10)).toEqual([sym('S'), 10]);
+    expect(g.matchl("A")).toEqual(['S', "A"]);
+    expect(g.matchl(true)).toEqual(['S', true]);
+    expect(g.matchl(10)).toEqual(['S', 10]);
     // Do I need this?
     // expect(g.matchl(sym('foo'))).toEqual([sym('S'), sym('foo')]);
   });
   it("should matchl an empty list", () => {
     const g = pegc('S <- { }');
-    expect(g.matchl([])).toEqual([sym('S'), null]);
+    expect(g.matchl([])).toEqual(['S', null]);
   });
   it("should parse atom inside list", () => {
     const g = pegc('S <- { "A" }');
-    expect(g.matchl(["A"])).toEqual([sym('S'), lst("A")]);
+    expect(g.matchl(["A"])).toEqual(['S', lst("A")]);
   });
   it("should parse multiple atoms inside list", () => {
     const g = pegc('S <- { "a" "b" "c" }');
     expect(g.matchl(["a", "b", "c"])).toEqual(
-      [sym('S'), lst(["a", "b", "c"])]);
+      ['S', lst(["a", "b", "c"])]);
   });
   it("should parse lists recursively", () => {
     const g = pegc('S <- { "a" { "b" { "c" } } }');
     expect(g.matchl(["a", ["b", ["c"]]])).toEqual(
-      [sym('S'), lst(['a', lst(['b', lst('c')])])]);
+      ['S', lst(['a', lst(['b', lst('c')])])]);
   });
   it("should parse lists recursively defined in other non-terminals", () => {
     const g = pegc(
@@ -88,14 +88,14 @@ describe("list matcher", () => {
       'V <- { "d" }    \n'
     );
     expect(g.matchl(["a", ["b", ["c", ["d"]]]])).toEqual(
-      [sym('S'), lst(['a', [sym('T'), lst(['b', [sym('U'), lst(['c', [sym('V'), lst('d')]])]])]])]);
+      ['S', lst(['a', ['T', lst(['b', ['U', lst(['c', ['V', lst('d')]])]])]])]);
   });
   it("should match atom recursively", () => {
     const g = pegc(
       'S <- { "a" A }    \n'+
       'A <- !{ .* } .    \n');
     expect(g.matchl(["a", 10])).toEqual(
-      [sym('S'), lst(['a', [sym('A'), 10]])]);
+      ['S', lst(['a', ['A', 10]])]);
   });
 
   it("should parse atom inside list", () => {
@@ -115,63 +115,63 @@ describe("input parser", () => {
   describe("#Plus", () => {
     it("should match a single element", () => {
       const g = pegc("A <- 'a'+");
-      expect(g.match("a")).toEqual([sym('A'), 'a']);
+      expect(g.match("a")).toEqual(['A', 'a']);
     });
     it("should match multiple elements", () => {
       const g = pegc("A <- 'a'+");
       expect(g.match("aaaa")).toEqual([
-        sym('A'),
+        'A',
         ['a', 'a', 'a', 'a'],
       ]);
     });
     it("should match the digit example", () => {
       const g = pegc("A <- [0-9]+");
-      expect(g.match("2019")).toEqual([sym('A'), ['2', '0', '1', '9']]);
+      expect(g.match("2019")).toEqual(['A', ['2', '0', '1', '9']]);
     });
   });
   describe("#Class", () => {
     it("should capture class of single char", () => {
       const g = pegc("A <- [a]");
-      expect(g.match("a")).toEqual([sym('A'), 'a']);
+      expect(g.match("a")).toEqual(['A', 'a']);
     });
     it("should capture class of multi char", () => {
       const g = pegc("A <- [ab]");
-      expect(g.match("a")).toEqual([sym('A'), 'a']);
-      expect(g.match("b")).toEqual([sym('A'), 'b']);
+      expect(g.match("a")).toEqual(['A', 'a']);
+      expect(g.match("b")).toEqual(['A', 'b']);
     });
     it("should capture class with single range", () => {
       const g = pegc("A <- [a-z]");
-      expect(g.match("a")).toEqual([sym('A'), 'a']);
-      expect(g.match("f")).toEqual([sym('A'), 'f']);
+      expect(g.match("a")).toEqual(['A', 'a']);
+      expect(g.match("f")).toEqual(['A', 'f']);
     });
     it("should capture class with multi range", () => {
       const g = pegc("A <- [a-z0-9]");
-      expect(g.match("a")).toEqual([sym('A'), 'a']);
-      expect(g.match("5")).toEqual([sym('A'), '5']);
+      expect(g.match("a")).toEqual(['A', 'a']);
+      expect(g.match("5")).toEqual(['A', '5']);
     });
   });
   describe("#Literal", () => {
     it("should capture literals", () => {
       const g = pegc("A <- 'b' 'a'* / 'c'");
-      expect(g.match("b")).toEqual([sym('A'), 'b']);
-      expect(g.match("baa")).toEqual([sym('A'), ['b', ['a', 'a']]]);
-      expect(g.match("c")).toEqual([sym('A'), "c"]);
+      expect(g.match("b")).toEqual(['A', 'b']);
+      expect(g.match("baa")).toEqual(['A', ['b', ['a', 'a']]]);
+      expect(g.match("c")).toEqual(['A', "c"]);
     });
     it("should capture multichar literals", () => {
       const g = pegc("A <- 'test'");
-      expect(g.match("test")).toEqual([sym('A'), 'test']);
+      expect(g.match("test")).toEqual(['A', 'test']);
     });
   });
   describe("#DOT", () => {
     it("should match anything but `b'", () => {
       const g = pegc("A <- !'b' .");
-      expect(g.match("a")).toEqual([sym('A'), 'a']);
-      expect(g.match("c")).toEqual([sym('A'), 'c']);
+      expect(g.match("a")).toEqual(['A', 'a']);
+      expect(g.match("c")).toEqual(['A', 'c']);
       expect(() => g.match("b")).toThrow(new Error);
     });
     it("should match any char", () => {
       const g = pegc("A <- .");
-      expect(g.match("t")).toEqual([sym('A'), 't']);
+      expect(g.match("t")).toEqual(['A', 't']);
     });
   });
 });

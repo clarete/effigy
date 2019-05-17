@@ -322,7 +322,7 @@ function pegc(g, a) {
 
   const action = (id, output) => {
     if (!a || typeof a[id] !== 'function')
-      return [id, output];
+      return [Symbol.keyFor(id), output];
     return a[id](id, output);
   };
 
