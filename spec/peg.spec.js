@@ -55,7 +55,7 @@ describe("list matcher", () => {
   });
   it("should parse atoms", () => {
     const g = pegc('S <- !{ .* } .');
-    // expect(() => g.matchl([])).toThrow(new Error);
+    expect(() => g.matchl([])).toThrow(new Error);
     expect(g.matchl("A")).toEqual([sym('S'), "A"]);
     expect(g.matchl(true)).toEqual([sym('S'), true]);
     expect(g.matchl(10)).toEqual([sym('S'), 10]);
