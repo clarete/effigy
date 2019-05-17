@@ -21,32 +21,48 @@ function parse(input) {
   return peg.pegc(grammar, actions).match(input);
 }
 
-function translate(source, flags) {
+function translate(parseTree, flags=0) {
   // Data structures
   const code = [];
-  const constantsTable = {};
-  const namesTable = {};
-  // Helpers
-  const emit = (op, arg) => code.push({ op, arg });
-  const newId = (t, v) => (t[Object.keys(t).length] = v) &&
-    Object.keys(t).length - 1;
-  // Prepare the translation table
-  const tvisit = {};
+  const module = { constants: [], names: [], code: [] };
   // 3. Traverse the parse tree and emit code
-  const visit = (n) => {
-    if (!Array.isArray(n)) return n;
-    const [s, e] = n;
-    if (Array.isArray(s))
-      return s.map(visit).concat([e.map(visit)]);
-    const t = tvisit[s];
-    return t ? t(e) : visit(e);
+  // 3.1. Prepare the translation table
+  const unwrap = (_, x) => x[1];
+
+  const loadConst = c => {
+    const pos = module.constants.indexOf(c);
+    return pos >= 0 || module.constants.push(c)-1;
   };
-  return visit(source);
+
+  const returnFromModule = c => [c].concat([
+    ['pop-top'],
+    ['load-const', loadConst(null)],
+    ['return-value'],
+  ]);
+
+  const actions = {
+    [sym('Module')]: (_, x) => ({ ...module, code: returnFromModule(x[1]) }),
+    [sym('Code')]: unwrap,
+    [sym('Expression')]: unwrap,
+    [sym('Term')]: unwrap,
+    [sym('Factor')]: unwrap,
+    [sym('Power')]: unwrap,
+    [sym('Unary')]: unwrap,
+    [sym('Primary')]: unwrap,
+    [sym('Value')]: unwrap,
+    [sym('Number')]: (_, x) => ['load-const', loadConst(x[1])],
+    [sym('Atom')]: (_, x) => x,
+  };
+  // 3.2. Traversal
+  // 3.2.1. Parse the PEG description
+  const grammar = fs.readFileSync(path.resolve('lang.tr')).toString();
+  // 3.2.2. Match the PEG against the input parse
+  return peg.pegc(grammar, actions).matchl(parseTree);
 }
 
 function translateFile(file, flags) {
   const arch = require(path.resolve(path.join("arch", flags.arch)));
-  const code = arch(file);
+  const code = arch.asm(file);
   code.emitInt();
   code.emitModule();
 }

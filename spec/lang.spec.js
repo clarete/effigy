@@ -1,10 +1,20 @@
-const { parse } = require('../lang');
+const { parse, translate } = require('../lang');
+const { sym } = require('../peg');
 
-describe("Parse", () => {
+describe("Translate", () => {
   describe("Expression", () => {
-    describe("Number", () => {
-      it("DEC", () => {
-        parse("1");
+    it("Number", () => {
+      const obj = translate(parse("42"));
+
+      expect(obj).toEqual({
+        constants: [42, null],
+        names: [],
+        code: [
+          ['load-const', 0],
+          ['pop-top'],
+          ['load-const', 1],
+          ['return-value'],
+        ],
       });
     });
   });

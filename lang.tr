@@ -1,0 +1,13 @@
+# -*- Mode: peg; -*-
+
+Module     <- { "Module" Code }
+Code       <- { "Code" Expression }
+Expression <- { "Expression" Term }
+Term       <- { "Term" Factor }
+Factor     <- { "Factor" Power }
+Power      <- { "Power" Unary }
+Unary      <- { "Unary" Primary }
+Primary    <- { "Primary" Value }
+Value      <- { "Value" Number }
+Number     <- { "Number" Atom }
+Atom       <- !{ .* } .
