@@ -98,10 +98,10 @@ describe("list matcher", () => {
       [sym('S'), lst(['a', [sym('A'), 10]])]);
   });
 
-  // it("should parse atom inside list", () => {
-  //   const g = pegc('S <- { "A" }', { S: (x) => `y${x}y` });
-  //   expect(g.matchl(["A"])).toBe("yAy");
-  // });
+  it("should parse atom inside list", () => {
+    const g = pegc('S <- { "A" }', { [sym('S')]: (_, x) => `y${x}y` });
+    expect(g.matchl(["A"])).toBe("yAy");
+  });
 });
 
 describe("input parser", () => {
