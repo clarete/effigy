@@ -98,17 +98,13 @@ function scanl(tree) {
     }
     return false;
   };
-  const must = (c) => {
-    console.log(indent() + 'MUST', c, currc());
-    return match(c) ||
-      error(`Expected '${c}' (${typeof c}), ` +
-            `got '${currc()}' (${typeof currc()})`);
-  };
+  const must = (c) => match(c) ||
+        error(`Expected '${c}' (${typeof c}), ` +
+              `got '${currc()}' (${typeof currc()})`);
 
   const currc = () => car(current);
 
   const any = () => {
-    console.log(indent() + 'ANY', currc());
     const curr = currc();
     nextc();
     return curr;
@@ -121,25 +117,18 @@ function scanl(tree) {
   };
 
   let listStack = [];
-  let idc = -1;
-  const indent = () =>
-    Array.from({ length: idc }, _ => "    ").join('');
+
+  // JavaScript doesn't like `[] === []` for some reason :/
   const isTheEmptyList = (l) =>
     Boolean(consp(l) && l.length === 0);
 
   const list = (fn) => {
-    idc++;
-    console.log(indent() + 'LIST.0', current, listStack);
     if (!consp(currc())) error("Expected list");
     listStack.push(cdr(current));
     current = car(current);
-    console.log(indent() + 'LIST.1', current, listStack);
     const r = fn();
-    console.log(indent() + 'LIST.2', current, listStack);
     if (!isTheEmptyList(current)) error("Unmatched sublist");
     current = listStack.pop();
-    console.log(indent() + 'LIST.3', current, listStack);
-    idc--;
     return lst(r);
   };
 
@@ -149,17 +138,13 @@ function scanl(tree) {
     catch (e) { current = saved; throw e; }
   };
 
-  const Choice = (...a) => choice(...a.map(x => () => backtrack(x)));
+  const Choice = (...a) =>
+    choice(...a.map(x => () => backtrack(x)));
 
   const Not = (p) => {
     const saved = current;
-    // const savedStack = listStack.slice();
-    console.log('ENTER NOT', listStack, current);
-    try {
-      const rez = not(p) && pred();
-      console.log('END OF NOT', current, listStack);
-      return rez;
-    } finally { current = saved; }
+    try { return not(p) && pred(); }
+    finally { current = saved; }
   };
 
   return {
