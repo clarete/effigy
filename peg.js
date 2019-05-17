@@ -51,14 +51,23 @@ function scan(source) {
   const checkeos = () => eos() && error('End of stream');
   const currc = () => source[cursor] || '';
   const nextc = () => checkeos() || source[cursor++];
-  const testc = (c) =>  currc() === c;
+  const testc = (c) => currc() === c;
   const match = (c) => testc(c) ? nextc() : false;
   const mustc = (c) => testc(c) || error(`Missing '${c} (mustc)'`);
   const range = ([a, b]) => {
     if (currc() >= a && currc() <= b) return nextc();
     return error(`Missing '${currc()}' (range)`);
   };
+
+  const mustAtom = (c) => {
+    const out = [];
+    for (const x of c) must(x) && out.push(x);
+    return out.join('');
+  };
+
   const must = (c) => match(c) || error(`Missing '${c}' (must)`);
+  const mustCharOrAtom = c => c.length === 1 ? must(c) : mustAtom(c);
+
   const any = () => checkeos() || nextc();
   const eos = () => cursor === source.length;
   const backtrack = (exp) => {
@@ -75,7 +84,8 @@ function scan(source) {
   const Range = (p) => Array.isArray(p) ? range(p) : must(p);
   return {
     Not, Choice, Range,
-    currc, mustc, must, match, eos, error, nextc, any,
+    currc, mustc, must: mustCharOrAtom,
+    match, eos, error, nextc, any,
   };
 }
 
@@ -375,9 +385,7 @@ function pegc(g, a) {
         // This is an actual list
         return cl(e.map(matchexpr).filter(x => !(x instanceof Predicate)));
       } else if (typeof e === 'string') {
-        const out = [];
-        for (const x of e) s.must(x) && out.push(x);
-        return out.join('');
+        return s.must(e);
       } else if (typeof e === 'symbol') {
         if (skipcapture(e)) {
           matchexpr(V(G, e));

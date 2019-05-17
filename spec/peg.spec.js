@@ -67,8 +67,8 @@ describe("list matcher", () => {
     expect(g.matchl([])).toEqual(['S', null]);
   });
   it("should parse atom inside list", () => {
-    const g = pegc('S <- { "A" }');
-    expect(g.matchl(["A"])).toEqual(['S', lst("A")]);
+    const g = pegc('S <- { "Atom" }');
+    expect(g.matchl(["Atom"])).toEqual(['S', lst("Atom")]);
   });
   it("should parse multiple atoms inside list", () => {
     const g = pegc('S <- { "a" "b" "c" }');
@@ -310,7 +310,6 @@ describe("peg parser", () => {
       expect(p.Literal()).toEqual('oi');
       expect(p.eos()).toBe(true);
     });
-
     it("should match single quoted chars spaces after", () => {
       const p = parse("'oi'  \n  ");
       expect(p.Literal()).toEqual('oi');
