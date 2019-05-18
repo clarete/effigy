@@ -19,15 +19,15 @@ Primary         <- _PROP Expression _PRCL
 # Function Declaration
 FunDef          <- FN Identifier? DefParams CodeOrBlock
 DefParams       <- _PROP DefParam? (PARAMSEP DefParam)* _PRCL
-DefParam        <- Identifier (ASSIGN Expression)?
+DefParam        <- Identifier (_ASSIGN Expression)?
 
 # Function Call
 FunCall         <- (FunDef / Identifier) CallParams
-CallParams      <- _PROP Expression? (PARAMSEP Expression)* _PRCL
+CallParams      <- _PROP Expression? (_PARAMSEP Expression)* _PRCL
 
 # Statements
 Statement       <- ReturnStm / WhileStm / ForStm / IfStm / FunDef / Assignment
-Assignment      <- Identifier ASSIGN Expression
+Assignment      <- Identifier _ASSIGN Expression
 
 # Control Flow Statements
 ForStm          <- FOR ForSteps CodeBlock
@@ -41,7 +41,7 @@ ReturnStm       <- RETURN Expression
 # Values
 Value           <- Number / String / BOOL
 Number          <- BIN / HEX / FLOAT / DEC
-String          <- DQUOTE (!DQUOTE .)* DQUOTE _
+String          <- _DQUOTE (!_DQUOTE .)* _DQUOTE _
 
 # Lexcical Hierarchy
 
@@ -68,15 +68,15 @@ RETURN          <- 'return'       _
 SWITCH          <- 'switch'       _
 
 # Lexical Delimiters
-DQUOTE          <- '"'
-PARAMSEP        <- ',' _
+_DQUOTE         <- '"'
+_PARAMSEP       <- ',' _
 FORSEP          <- ';' _
 _PROP           <- '(' _
 _PRCL           <- ')' _
 CBOP            <- '{' _
 CBCL            <- '}' _
 NEGATIVE        <- '-' _
-ASSIGN          <- '=' _
+_ASSIGN         <- '=' _
 
 # Operators
 PLUS            <- '+'  _

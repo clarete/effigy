@@ -17,5 +17,22 @@ describe("Translate", () => {
         ],
       });
     });
+
+    it("FunCall", () => {
+      const tree = parse("print()");
+      const obj = translate(tree);
+
+      expect(obj).toEqual({
+        constants: [null],
+        names: ['print'],
+        code: [
+          ['load-name', 0],
+          ['call-function', 0],
+          ['pop-top'],
+          ['load-const', 0],
+          ['return-value'],
+        ],
+      });
+    });
   });
 });

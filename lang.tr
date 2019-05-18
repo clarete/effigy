@@ -8,6 +8,15 @@ Factor     <- { "Factor" Power }
 Power      <- { "Power" Unary }
 Unary      <- { "Unary" Primary }
 Primary    <- { "Primary" Value }
+            / { "Primary" FunCall }
+
 Value      <- { "Value" Number }
+
+FunCall    <- { "FunCall" Atom }
+
+CallParams <- { "CallParams" Atom }
+
 Number     <- { "Number" Atom }
+Identifier <- { "Identifier" Atom  }
+
 Atom       <- !{ .* } .

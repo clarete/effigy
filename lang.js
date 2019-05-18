@@ -11,7 +11,8 @@ const actions = {
   [sym('DEC')]: (_, x) => toint(x, 10),
   [sym('HEX')]: (_, x) => toint(x, 16),
   [sym('BIN')]: (_, x) => toint(join(x).replace('0b', ''), 2),
-  [sym('Identifier')]: (s, x) => [s, join(x)],
+  [sym('Identifier')]: (_, x) => join(x),
+  [sym('CallParams')]: (_, x) => x,
 };
 
 function parse(input) {
@@ -29,19 +30,35 @@ function translate(parseTree, flags=0) {
   // 3.1. Prepare the translation table
   const unwrap = (_, x) => x[1];
 
-  const loadConst = c => {
+  const _const = c => {
     const pos = module.constants.indexOf(c);
     return pos >= 0 || module.constants.push(c)-1;
   };
 
-  const returnFromModule = c => [c].concat([
-    ['pop-top'],
-    ['load-const', loadConst(null)],
-    ['return-value'],
-  ]);
+  const loadName = c => {
+    const pos = module.names.indexOf(c);
+    return pos >= 0 || module.names.push(c)-1;
+  };
+
+  // Emitters
+
+  const funCall = c => {
+    code.push(['load-name', loadName(c)]);
+    code.push(['call-function', 0]);
+  };
+
+  const loadConst = c => {
+    code.push(['load-const', _const(c)]);
+  };
+
+  const finishModule = () => {
+    code.push(['pop-top']);
+    loadConst(null);
+    code.push(['return-value']);
+  };
 
   const actions = {
-    [sym('Module')]: (_, x) => ({ ...module, code: returnFromModule(x[1]) }),
+    [sym('Module')]: finishModule,
     [sym('Code')]: unwrap,
     [sym('Expression')]: unwrap,
     [sym('Term')]: unwrap,
@@ -50,14 +67,20 @@ function translate(parseTree, flags=0) {
     [sym('Unary')]: unwrap,
     [sym('Primary')]: unwrap,
     [sym('Value')]: unwrap,
-    [sym('Number')]: (_, x) => ['load-const', loadConst(x[1])],
+    [sym('Identifier')]: unwrap,
+    [sym('FunCall')]: (_, x) => funCall(x[1]),
+    [sym('Number')]: (_, x) => loadConst(x[1]),
     [sym('Atom')]: (_, x) => x,
   };
   // 3.2. Traversal
   // 3.2.1. Parse the PEG description
   const grammar = fs.readFileSync(path.resolve('lang.tr')).toString();
   // 3.2.2. Match the PEG against the input parse
-  return peg.pegc(grammar, actions).matchl(parseTree);
+  peg.pegc(grammar, actions).matchl(parseTree);
+
+  // 3.3. Return the module object with the list of generated op codes
+  // and tables
+  return ({ ...module, code });
 }
 
 function translateFile(file, flags) {
