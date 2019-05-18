@@ -37,12 +37,17 @@ const and = (thing) => not(() => not(thing));
 
 // Helper for flattening sequences
 const singleOrList = (x) => ((
-  Array.isArray(x)         &&   // It's a list
+  consp(x)                 &&   // It's a list
   !(x instanceof List)     &&   // It's not a user list
   typeof x[0] !== 'symbol' &&   // And not a function
   x.length === 1           &&   // And has a single element
   x[0])                    ||   // Then return first item
   x);                           // Or return
+
+// We lisp yet
+const car = ([h, ...t]) => h;
+const cdr = ([h, ...t]) => t;
+const consp = Array.isArray;
 
 // Basic machinery to parse things
 function scan(source) {
@@ -81,17 +86,13 @@ function scan(source) {
     try { not(p); return pred(); }
     catch (e) { cursor = saved; throw e; }
   };
-  const Range = (p) => Array.isArray(p) ? range(p) : must(p);
+  const Range = (p) => consp(p) ? range(p) : must(p);
   return {
     Not, Choice, Range,
     currc, mustc, must: mustCharOrAtom,
     match, eos, error, nextc, any,
   };
 }
-
-const car = ([h, ...t]) => h;
-const cdr = ([h, ...t]) => t;
-const consp = Array.isArray;
 
 function scanl(tree) {
   let current = tree;
@@ -176,7 +177,7 @@ function scanl(tree) {
 function peg(s) {
   // If a list is the representation of Expression or Function
   const isFunc = (n) => typeof n[0] === 'symbol' || n[0] instanceof PrimFun;
-  const isFuncAst = (n) => Array.isArray(n) && n.length > 0 && isFunc(n);
+  const isFuncAst = (n) => consp(n) && n.length > 0 && isFunc(n);
 
   // PEG Parser
   const Grammar = () => [Spacing(), oneOrMore(Definition), EndOfFile()][1];
@@ -371,7 +372,7 @@ function pegc(g, a) {
     // consume any input and leaves a dangling []. There's probably a
     // better way to do this.
     const cleanList = (l) => {
-      if (!Array.isArray(l)) return l;
+      if (!consp(l)) return l;
       const out = l.filter(x => x);
       return out.length > 0 ? out : null;
     };
@@ -386,11 +387,11 @@ function pegc(g, a) {
     const matchexpr = (e) => {
       if (e instanceof PrimFun) {
         return cl(V(prims, e.name)());
-      } else if (Array.isArray(e) && e[0] instanceof PrimFun) {
+      } else if (consp(e) && e[0] instanceof PrimFun) {
         // This is our function. It's an array where the first item is
         // a symbol or a primitive
         return cl(callprim(e));
-      } else if (Array.isArray(e)) {
+      } else if (consp(e)) {
         // This is an actual list
         return cl(e.map(matchexpr).filter(x => !(x instanceof Predicate)));
       } else if (typeof e === 'string') {
