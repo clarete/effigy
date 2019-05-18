@@ -25,7 +25,7 @@ function parse(input) {
 function translate(parseTree, flags=0) {
   // Data structures
   const code = [];
-  const module = { constants: [], names: [], code: [] };
+  const module = { constants: [], names: [], code };
   // 3. Traverse the parse tree and emit code
   // 3.1. Prepare the translation table
   const unwrap = (_, x) => x[1];
@@ -80,7 +80,7 @@ function translate(parseTree, flags=0) {
 
   // 3.3. Return the module object with the list of generated op codes
   // and tables
-  return ({ ...module, code });
+  return module;
 }
 
 function translateFile(file, flags) {
