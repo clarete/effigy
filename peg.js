@@ -126,20 +126,28 @@ function scanl(tree) {
     return current;
   };
 
-  let listStack = [];
+  const listStack = [];
 
   // JavaScript doesn't like `[] === []` for some reason :/
   const isTheEmptyList = (l) =>
     Boolean(consp(l) && l.length === 0);
 
+  const errorStack = [];
+  const errPath = () => errorStack.join('/') || '/';
+
   const list = (fn) => {
-    if (!consp(currc())) error("Expected list");
+    if (!consp(currc())) error(`Expected list at ${errPath()}`);
     listStack.push(cdr(current));
     current = car(current);
-    const r = fn();
-    if (!isTheEmptyList(current)) error("Unmatched sublist");
-    current = listStack.pop();
-    return lst(r);
+    errorStack.push(car(current));
+    try {
+      const r = fn();
+      if (!isTheEmptyList(current)) error("Unmatched sublist");
+      current = listStack.pop();
+      return lst(r);
+    } finally {
+      errorStack.pop();
+    }
   };
 
   const backtrack = (exp) => {
@@ -154,6 +162,7 @@ function scanl(tree) {
   const Not = (p) => {
     const saved = current;
     try { return not(p) && pred(); }
+    catch (e) { return error(`Predicate at ${errPath()}`); }
     finally { current = saved; }
   };
 

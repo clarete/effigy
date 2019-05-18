@@ -43,8 +43,11 @@ describe("action driver", () => {
       lst([
         ['V', 12],
         lst([
-          lst(['+', ['V', 345 ] ]),
-          lst(['+', ['V', 8 ] ]) ]) ]) ]);
+          lst(['+', ['V', 345]]),
+          lst(['+', ['V',   8]]),
+        ])
+      ])
+    ]);
   });
 });
 
@@ -55,7 +58,7 @@ describe("list matcher", () => {
   });
   it("should parse atoms", () => {
     const g = pegc('S <- !{ .* } .');
-    expect(() => g.matchl([])).toThrow(new Error);
+    expect(() => g.matchl([])).toThrow(new Error('Predicate at /'));
     expect(g.matchl("A")).toEqual(['S', "A"]);
     expect(g.matchl(true)).toEqual(['S', true]);
     expect(g.matchl(10)).toEqual(['S', 10]);
