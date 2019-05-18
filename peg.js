@@ -430,4 +430,5 @@ module.exports = {
   sym,
   lst,
   prim,
+  consp,
 };

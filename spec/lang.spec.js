@@ -3,14 +3,34 @@ const { sym } = require('../peg');
 
 describe("Translate", () => {
   describe("Expression", () => {
-    it("Number", () => {
-      const obj = translate(parse("42"));
+    it("FunCall", () => {
+      const tree = parse("print()");
+      const code = translate(tree);
 
-      expect(obj).toEqual({
-        constants: [42, null],
-        names: [],
-        code: [
+      expect(code).toEqual({
+        constants: [null],
+        names: ['print'],
+        instructions: [
+          ['load-name', 0],
+          ['call-function', 0],
+          ['pop-top'],
           ['load-const', 0],
+          ['return-value'],
+        ],
+      });
+    });
+
+    it("FunCall with one number parameter", () => {
+      const tree = parse("print(42)");
+      const code = translate(tree);
+
+      expect(code).toEqual({
+        constants: [42, null],
+        names: ['print'],
+        instructions: [
+          ['load-name', 0],
+          ['load-const', 0],
+          ['call-function', 1],
           ['pop-top'],
           ['load-const', 1],
           ['return-value'],
@@ -18,18 +38,20 @@ describe("Translate", () => {
       });
     });
 
-    it("FunCall", () => {
-      const tree = parse("print()");
-      const obj = translate(tree);
+    it("FunCall with two number parameter", () => {
+      const tree = parse("print(42, 43)");
+      const code = translate(tree);
 
-      expect(obj).toEqual({
-        constants: [null],
+      expect(code).toEqual({
+        constants: [42, 43, null],
         names: ['print'],
-        code: [
+        instructions: [
           ['load-name', 0],
-          ['call-function', 0],
-          ['pop-top'],
           ['load-const', 0],
+          ['load-const', 1],
+          ['call-function', 2],
+          ['pop-top'],
+          ['load-const', 2],
           ['return-value'],
         ],
       });

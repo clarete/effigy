@@ -12,9 +12,11 @@ Primary    <- { "Primary" Value }
 
 Value      <- { "Value" Number }
 
-FunCall    <- { "FunCall" Atom }
+FunCall    <- { "FunCall" { Atom FunParams } }  # One or more parameter
+            / { "FunCall" Atom }                # No parameters
 
-CallParams <- { "CallParams" Atom }
+FunParams  <- { Expression* }
+            / Expression
 
 Number     <- { "Number" Atom }
 Identifier <- { "Identifier" Atom  }
