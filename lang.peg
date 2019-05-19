@@ -1,7 +1,7 @@
 # Scopes
-Module          <- Code _EndOfFile
-Code            <- _ ((Statement / Expression) (EndOfLine / _EndOfFile))*
-CodeBlock       <- CBOP Code CBCL
+Module          <- _ Code _EndOfFile
+Code            <- (Statement / Expression)+
+CodeBlock       <- _CBOP Code _CBCL
 CodeOrBlock     <- CodeBlock / Code
 
 # Expressions
@@ -73,8 +73,8 @@ _PARAMSEP       <- ',' _
 FORSEP          <- ';' _
 _PROP           <- '(' _
 _PRCL           <- ')' _
-CBOP            <- '{' _
-CBCL            <- '}' _
+_CBOP           <- '{' _
+_CBCL           <- '}' _
 NEGATIVE        <- '-' _
 _ASSIGN         <- '=' _
 
@@ -93,7 +93,7 @@ LSHIFT          <- '<<' _
 
 # Whitespace Handling
 _               <- (Space / Comment)*
-Comment         <- '#' (!EndOfLine .)* EndOfLine
-Space           <- ' ' / '\t' / EndOfLine
-EndOfLine       <- '\r\n' / '\n' / '\r'
+Comment         <- '#' (!_EndOfLine .)* _EndOfLine
+Space           <- ' ' / '\t' / _EndOfLine
+_EndOfLine      <- '\r\n' / '\n' / '\r'
 _EndOfFile      <- !.
