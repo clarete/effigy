@@ -84,7 +84,7 @@ function scan(source) {
   const Not = (p) => {
     const saved = cursor;
     try { not(p); return pred(); }
-    catch (e) { cursor = saved; throw e; }
+    catch (e) { cursor = saved; return error(`Predicate`); }
   };
   const Range = (p) => consp(p) ? range(p) : must(p);
   return {
