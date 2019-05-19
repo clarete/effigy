@@ -177,6 +177,10 @@ describe("input parser", () => {
       expect(g.match("t")).toEqual(['A', 't']);
     });
   });
+  it("should parse escaped values", () => {
+    const g = pegc("A <- 'a\\n'");
+    expect(g.match("a\n")).toEqual(['A', 'a\n']);
+  });
 });
 
 describe("peg parser", () => {

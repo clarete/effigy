@@ -231,7 +231,11 @@ function peg(s) {
   const Char = () => {
     if (s.match('\\')) {
       const eschr = ['n', 'r', 't', "'", '"', '[', ']', '\\'];
-      if (eschr.includes(s.currc())) return s.match(s.currc());
+      const map = { n: '\n', r: '\r', t: '\t', '\\': '\\' };
+      if (eschr.includes(s.currc())) {
+        const n = s.match(s.currc());
+        return map[n] || n;
+      }
       return s.error(`Expected either of ${eschr}`);
     }
     return s.nextc();
