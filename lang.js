@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
+
 const peg = require('./peg');
+const py37 = require('./arch/py37');
 
 const { sym } = peg;
 
@@ -108,14 +110,33 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
   traverse(parseTree, actions);
   // 3.3. Return code object with list of generated opcodes and
   // value tables
-  return code;
+  return output();
 }
 
-function translateFile(file, flags) {
-  const arch = require(path.resolve(path.join("arch", flags.arch)));
-  const code = arch.asm(file);
-  code.emitInt();
-  code.emitModule();
+function translateFile(filename) {
+  const file = path.resolve(filename);
+  const input = fs.readFileSync(file).toString();
+
+  const tree = parse(input);
+  const code = translate(tree, 0, py37.compiler(file));
+
+  // Read modification time of the source file
+  const stats = fs.statSync(file);
+  const mtime = new Date(stats.mtime/1000);
+
+  // Machinery to move the offset of the output buffer forward
+  const b = Buffer.alloc(py37.HEADER_SIZE + 160, 0, 'binary');
+  let bufferOffset = 0;
+  const offset = step => (bufferOffset += step) - step;
+
+  // Run the things
+  py37.header(b, offset, mtime, b.length);
+  py37.code(code, b, offset);
+
+  // Output to a file
+  const fileNameNoExt = path.basename(file, path.extname(file));
+  const fileNameOutput = `${fileNameNoExt}.pyc`;
+  fs.writeFileSync(fileNameOutput, b, 'binary');
 }
 
 module.exports = {
