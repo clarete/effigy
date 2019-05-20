@@ -134,21 +134,14 @@ const addToTable = (t, i) => {
 
 function compiler(co_filename) {
   const instructions = [];
-  const code = new PyCode({ co_flags: 0x40 }); //({ co_filename });
+  const code = new PyCode({ co_flags: 64, co_stacksize: 2 }); //({ co_filename });
   // -- Accessor & Mutator for instructions
   const output = () => {
-    const b = Buffer.alloc(instructions.length * 3);
-    instructions.forEach(i => {
-      const [op, arg] = i;
-      const opcode = opcodeFromString(op);
-      b.writeUInt8(opcode);
-
-      if (arg) {
-        b.writeUInt8(arg % 256);
-        b.writeUInt8(Math.floor(arg / 256));
-      }
+    const instrlist = instructions.map(i => {
+      const [n, v] = i, code = opcodeFromString(n);
+      return v === undefined ? [code, 0] : [code, v];
     });
-    code.co_code = b;
+    code.co_code = Buffer.from(instrlist.flat());
     return code;
   };
 
