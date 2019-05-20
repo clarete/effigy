@@ -12,6 +12,7 @@ const TYPE_ELLIPSIS          = '.'.charCodeAt(0);
 const TYPE_INT               = 'i'.charCodeAt(0);
 const TYPE_STRING            = 's'.charCodeAt(0);
 const TYPE_TUPLE             = '('.charCodeAt(0);
+const TYPE_SMALL_TUPLE       = ')'.charCodeAt(0);
 const TYPE_CODE              = 'c'.charCodeAt(0);
 const TYPE_REF               = 'r'.charCodeAt(0);
 
@@ -31,7 +32,7 @@ class PyCode {
     co_names=[],
     co_varnames=[],
     co_freevars=[],
-    co_cellvars=0,
+    co_cellvars=[],
     co_filename="",
     co_name="",
     co_firstlineno=0,
@@ -98,8 +99,13 @@ function code(i, b, offset) {
       wTYPE(TYPE_STRING, f);
       wPStr(v.toString('binary'));
     } else if (Array.isArray(v)) {
-      wTYPE(TYPE_TUPLE, f);
-      wLong(v.length);
+      if (v.length < 256) {
+        wTYPE(TYPE_SMALL_TUPLE);
+        wByte(v.length);
+      } else {
+        wTYPE(TYPE_TUPLE, f);
+        wLong(v.length);
+      }
       for (const o of v) wObject(o);
     } else if (v instanceof PyCode) {
       wTYPE(TYPE_CODE, f);
