@@ -58,21 +58,18 @@ class PyCode {
 
 function code(i, b, offset) {
   const wByte = v => b.writeUInt8(v, offset(1));
+  const wLong = v => b.writeUInt32LE(v, offset(4));
   const wStr  = v => b.write(v, offset(v.length), v.length, 'binary');
   const wPStr = v => { wLong(v.length); wStr(v); };
   const wTYPE = (v, f) => wByte(v | f);
-  const wLong = v => {
-    wByte( v        & 0xff);
-    wByte((v >>  8) & 0xff);
-    wByte((v >> 16) & 0xff);
-    wByte((v >> 24) & 0xff);
-  };
+
   const refCache = new Map();
   const wRef = (v, f) => {
+    if (typeof v === 'string' || Buffer.isBuffer(v)) return false;
     const w = refCache[v];
     if (w !== undefined) {
       if (!(0 <= w && w <= 0x7fffffff)) throw new Error('assert');
-      wByte(TYPE_REF);
+      wByte(TYPE_REF, f[0]);
       wLong(v);
       return true;
     }
@@ -107,7 +104,7 @@ function code(i, b, offset) {
     } else if (v instanceof PyCode) {
       wTYPE(TYPE_CODE, f);
       wLong(v.co_argcount);
-      wLong(v.co_posonlyargcount);
+      // wLong(v.co_posonlyargcount); new in python3.8
       wLong(v.co_kwonlyargcount);
       wLong(v.co_nlocals);
       wLong(v.co_stacksize);
