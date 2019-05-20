@@ -29,50 +29,58 @@ function traverse(tree, actions) {
   return peg.pegc(grammar, actions).matchl(tree);
 }
 
-function translate(parseTree, flags=0) {
+const addToTable = (t, i) => {
+  const pos = t.indexOf(i);
+  return pos >= 0 ? pos : t.push(i)-1;
+};
+
+function dummyCompiler() {
   // Data structures
   const instructions = [];
   const code = { constants: [], names: [], instructions };
+  // -- Accessor & Mutator for instructions
+  const output = () => code;
+  const emit = (op, arg) =>
+    instructions.push(arg !== undefined ? [op, arg] : [op]);
+  // -- Mutators for adding new items to tables
+  const newConst = c => addToTable(code.constants, c);
+  const newName = c => addToTable(code.names, c);
+  // -- Basic interface for compiler
+  return { emit, newConst, newName, output };
+}
+
+function translate(parseTree, flags=0, compiler=dummyCompiler()) {
   // 3. Traverse the parse tree and emit code
   // 3.1. Prepare the translation table
   const unwrap = (_, x) => x[1];
-  const emit = (op, arg) =>
-    instructions.push(arg !== undefined ? [op, arg] : [op]);
-  // -- helpers for adding new items to tables
-  const newConst = c => addToTable(code.constants, c);
-  const newName = c => addToTable(code.names, c);
-  const addToTable = (t, i) => {
-    const pos = t.indexOf(i);
-    return pos >= 0 ? pos : t.push(i)-1;
-  };
-
+  const { emit, newConst, newName, output } = compiler;
   // Emitters
   const loadConst = c => {
     const newc = newConst(c);
     emit('load-const', newc);
     return newc;
   };
-
+  const loadName = c => {
+    const newn = newName(c);
+    emit('load-name', newn);
+    return newn;
+  };
   const funCall = c => {
     if (peg.consp(c)) {
       const [name, args] = c;
-      emit('load-name', newName(name));
-      if (peg.consp(args)) {
-        // More than one parameter
+      loadName(name);
+      if (peg.consp(args)) {    // More than one parameter
         for (const i of args) loadConst(i);
         emit('call-function', args.length);
-      } else {
-        // Single parameter
+      } else {                  // Single parameter
         loadConst(args);
         emit('call-function', 1);
       }
-    } else {
-      // No parameters
-      emit('load-name', newName(c));
+    } else {                    // No parameters
+      loadName(c);
       emit('call-function', 0);
     }
   };
-
   const finishModule = () => {
     emit('pop-top');
     loadConst(null);
