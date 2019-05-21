@@ -11,6 +11,7 @@ const TYPE_STOPITER          = 'S'.charCodeAt(0);
 const TYPE_ELLIPSIS          = '.'.charCodeAt(0);
 const TYPE_INT               = 'i'.charCodeAt(0);
 const TYPE_STRING            = 's'.charCodeAt(0);
+const TYPE_SHORT_ASCII       = 'z'.charCodeAt(0);
 const TYPE_TUPLE             = '('.charCodeAt(0);
 const TYPE_SMALL_TUPLE       = ')'.charCodeAt(0);
 const TYPE_CODE              = 'c'.charCodeAt(0);
@@ -61,17 +62,20 @@ function code(i, b, offset) {
   const wByte = v => b.writeUInt8(v, offset(1));
   const wLong = v => b.writeUInt32LE(v, offset(4));
   const wStr  = v => b.write(v, offset(v.length), v.length, 'binary');
+  const wSStr = v => { wByte(v.length); wStr(v); };
   const wPStr = v => { wLong(v.length); wStr(v); };
   const wTYPE = (v, f) => wByte(v | f);
 
   const refCache = new Map();
   const wRef = (v, f) => {
-    if (typeof v === 'string' || Buffer.isBuffer(v)) return false;
+    if (Buffer.isBuffer(v) || Array.isArray(v) && v.length !== 0) {
+      return false;
+    }
     const w = refCache[v];
     if (w !== undefined) {
       if (!(0 <= w && w <= 0x7fffffff)) throw new Error('assert');
       wByte(TYPE_REF, f[0]);
-      wLong(v);
+      wLong(w);
       return true;
     }
     refCache[v] = refCache.size;
@@ -79,7 +83,6 @@ function code(i, b, offset) {
     return false;
   };
   const wObject = v => {
-    console.log('wObject', v);
     const flagc = [0];
     if (v === null) wByte(TYPE_NONE);
     else if (v === false) wByte(TYPE_FALSE);
@@ -87,14 +90,18 @@ function code(i, b, offset) {
     else if (!wRef(v, flagc)) wComplexObject(v, flagc);
   };
   const wComplexObject = (v, flagc) => {
-    console.log('wComplexObject', v);
     const f = flagc[0];
     if (Number.isInteger(v)) {
       wTYPE(TYPE_INT, f);
       wLong(v);
     } else if (typeof v === 'string') {
-      wTYPE(TYPE_STRING, f);
-      wPStr(v);
+      if (v.length < 256) {
+        wTYPE(TYPE_SHORT_ASCII, f);
+        wSStr(v);
+      } else {
+        wTYPE(TYPE_STRING, f);
+        wPStr(v);
+      }
     } else if (Buffer.isBuffer(v)) {
       wTYPE(TYPE_STRING, f);
       wPStr(v.toString('binary'));
