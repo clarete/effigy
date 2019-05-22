@@ -118,19 +118,19 @@ function translateFile(filename) {
   const input = fs.readFileSync(file).toString();
 
   const tree = parse(input);
-  const code = translate(tree, 0, py37.compiler(file));
+  const code = translate(tree, 0, py37.compiler(path.basename(file)));
 
   // Read modification time of the source file
   const stats = fs.statSync(file);
   const mtime = new Date(stats.mtime/1000);
 
   // Machinery to move the offset of the output buffer forward
-  const b = Buffer.alloc(py37.HEADER_SIZE + 160, 0, 'binary');
+  const b = Buffer.alloc(py37.HEADER_SIZE + 94, 0, 'binary');
   let bufferOffset = 0;
   const offset = step => (bufferOffset += step) - step;
 
   // Run the things
-  py37.header(b, offset, mtime, b.length);
+  py37.header(b, offset, mtime, 10);
   py37.code(code, b, offset);
 
   // Output to a file
