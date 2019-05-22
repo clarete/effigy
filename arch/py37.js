@@ -60,10 +60,10 @@ class PyCode {
   }
 }
 
-function code(i, b, offset) {
-  const wByte = v => b.writeInt8(v, offset(1));
-  const wLong = v => b.writeUInt32LE(v, offset(4));
-  const wStr  = v => b.write(v, offset(v.length), v.length, 'binary');
+function code(i, write) {
+  const wByte = v => write(1, (b, o) => b.writeInt8(v, o));
+  const wLong = v => write(4, (b, o) => b.writeUInt32LE(v, o));
+  const wStr  = v => write(v.length, (b, o) => b.write(v, o, v.length, 'binary'));
   const wSStr = v => { wByte(v.length); wStr(v); };
   const wPStr = v => { wLong(v.length); wStr(v); };
   const wTYPE = (v, f) => wByte(v | f);
@@ -201,11 +201,11 @@ function compiler(co_filename) {
   return { emit, newConst, newName, output };
 }
 
-function header(b, offset, mtime, length) {
-  b.writeInt32BE(MAGIC_NUMBER, offset(4)); // Py37 Magic Number
-  b.writeInt32LE(0, offset(4));            // PEP-552
-  b.writeInt32LE(mtime, offset(4));        // Modified Date
-  b.writeInt32LE(length, offset(4));       // Code Size
+function header(mtime, length, write) {
+  write(4, (b, o) => b.writeInt32BE(MAGIC_NUMBER, o)); // Py37 Magic Number
+  write(4, (b, o) => b.writeInt32LE(0, o));            // PEP-552
+  write(4, (b, o) => b.writeInt32LE(mtime, o));        // Modified Date
+  write(4, (b, o) => b.writeInt32LE(length, o));       // Code Size
 }
 
 function opcodeFromString(n) {

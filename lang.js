@@ -125,18 +125,26 @@ function translateFile(filename) {
   const mtime = new Date(stats.mtime/1000);
 
   // Machinery to move the offset of the output buffer forward
-  const b = Buffer.alloc(py37.HEADER_SIZE + 94, 0, 'binary');
+  let buffer = Buffer.alloc(py37.HEADER_SIZE, 0, 'binary');
   let bufferOffset = 0;
-  const offset = step => (bufferOffset += step) - step;
+  // Ensure buffer size
+  const offset = step => {
+    const nextSize = bufferOffset += step;
+    if (nextSize > buffer.byteLength)
+      buffer = Buffer.concat([buffer, Buffer.alloc(step)], nextSize);
+    return nextSize - step;
+  };
+  // Because the `buffer' variable is reassigned in this scope
+  const write = (o, f) => { const of = offset(o); f(buffer, of); };
 
   // Run the things
-  py37.header(b, offset, mtime, 10);
-  py37.code(code, b, offset);
+  py37.header(mtime, 10, write);
+  py37.code(code, write);
 
   // Output to a file
   const fileNameNoExt = path.basename(file, path.extname(file));
   const fileNameOutput = `${fileNameNoExt}.pyc`;
-  fs.writeFileSync(fileNameOutput, b, 'binary');
+  fs.writeFileSync(fileNameOutput, buffer, 'binary');
 }
 
 module.exports = {
