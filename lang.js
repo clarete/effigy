@@ -138,7 +138,7 @@ function translateFile(filename) {
   const write = (o, f) => { const of = offset(o); f(buffer, of); };
 
   // Run the things
-  py37.header(mtime, 10, write);
+  py37.header(mtime, code.length, write);
   py37.code(code, write);
 
   // Output to a file
