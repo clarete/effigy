@@ -18,7 +18,7 @@ Primary         <- _PROP Expression _PRCL
 
 # Function Declaration
 FunDef          <- FN Identifier? DefParams CodeOrBlock
-DefParams       <- _PROP DefParam? (PARAMSEP DefParam)* _PRCL
+DefParams       <- _PROP DefParam? (_PARAMSEP DefParam)* _PRCL
 DefParam        <- Identifier (_ASSIGN Expression)?
 
 # Function Call
