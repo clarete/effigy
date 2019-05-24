@@ -385,7 +385,7 @@ function pegc(g, a) {
     // If the identifier starts with an underscore (_) this not quite
     // elegant piece of code will prevent it from being captured in
     // the parse tree. That doesn't apply to the first rule though.
-    const skipcapture = (s) => s.toString().match(/Symbol\(\_/);
+    const skipcapture = (s) => Symbol.keyFor(s).startsWith('_');
 
     // Recursive Eval
     const matchexpr = (e) => {
