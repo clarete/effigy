@@ -6,15 +6,15 @@ const py37 = require('./arch/py37');
 
 const { sym } = peg;
 
-const join = (x) => Array.isArray(x) && x.flat().join('') || x;
+const join = x => Array.isArray(x) && x.flat().join('') || x;
 const toint = (x, b) => parseInt(join(x), b);
 const single = (s, x) => x.length === 2 ? x[1] : [s, x];
 const parserActions = {
-  [sym('DEC')]: (_, x) => toint(x, 10),
-  [sym('HEX')]: (_, x) => toint(x, 16),
-  [sym('BIN')]: (_, x) => toint(join(x).replace('0b', ''), 2),
-  [sym('Identifier')]: (_, x) => join(x),
-  [sym('CallParams')]: (_, x) => x,
+  DEC: (_, x) => toint(x, 10),
+  HEX: (_, x) => toint(x, 16),
+  BIN: (_, x) => toint(join(x).replace('0b', ''), 2),
+  Identifier: (n, x) => [Symbol.keyFor(n), join(x)],
+  CallParams: (_, x) => x,
 };
 
 function parse(input) {
@@ -83,27 +83,28 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
       emit('call-function', 0);
     }
   };
-  const finishModule = () => {
+  const module = () => {
     emit('pop-top');
     loadConst(null);
     emit('return-value');
   };
 
   const actions = {
-    [sym('Module')]: finishModule,
-    [sym('Code')]: unwrap,
-    [sym('Expression')]: unwrap,
-    [sym('Term')]: unwrap,
-    [sym('Factor')]: unwrap,
-    [sym('Power')]: unwrap,
-    [sym('Unary')]: unwrap,
-    [sym('Primary')]: unwrap,
-    [sym('Value')]: unwrap,
-    [sym('FunParams')]: (_, x) => x,
-    [sym('Identifier')]: unwrap,
-    [sym('FunCall')]: (_, x) => funCall(x[1]),
-    [sym('Number')]: (_, x) => x[1],
-    [sym('Atom')]: (_, x) => x,
+    Module: module,
+    Code: unwrap,
+    Expression: unwrap,
+    Assignment: (_, x) => assignment(x[1]),
+    Term: unwrap,
+    Factor: unwrap,
+    Power: unwrap,
+    Unary: unwrap,
+    Primary: unwrap,
+    Value: unwrap,
+    FunParams: (_, x) => x,
+    Identifier: unwrap,
+    FunCall: (_, x) => funCall(x[1]),
+    Number: (_, x) => x[1],
+    Atom: (_, x) => x,
   };
 
   // 3.2. Traversal

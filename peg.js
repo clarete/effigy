@@ -344,10 +344,14 @@ const pred = () => new Predicate();
 function pegc(g, a) {
   const { grammar: G, start } = pegt(peg(scan(g)).Grammar());
 
-  const action = (id, output) => {
-    if (!a || typeof a[id] !== 'function')
-      return [Symbol.keyFor(id), output];
-    return a[id](id, output);
+  const action = (id, th) => {
+    if (a) {
+      const ath = a[Symbol.keyFor(id)];
+      if (typeof ath === 'function') {
+        return ath(id, th);
+      }
+    }
+    return [Symbol.keyFor(id), th];
   };
 
   const match = (s) => {

@@ -20,9 +20,9 @@ describe("action driver", () => {
     const fj = (x) => Array.isArray(x) && x.join('') || x;
 
     const pa = {
-      [sym('N')]: (_, x) => parseInt(fj(x), 10),
-      [sym('T')]: (_, x) => x,
-      [sym('P')]: (_, x) => '+',
+      N: (_, x) => parseInt(fj(x), 10),
+      T: (_, x) => x,
+      P: (_, x) => '+',
     };
     const pg = pegc(
       'T <- N ((P / M) N)*\n' +
@@ -31,7 +31,7 @@ describe("action driver", () => {
       'M <- "-"           \n',
       pa);
 
-    const ta = { [sym('S')]: (_, x) => fj(x) };
+    const ta = { S: (_, x) => fj(x) };
     const tg = pegc(
       'T <- { V { { "+" V }* } }    \n' +
       'V <- !{ .* } .               \n',
@@ -102,7 +102,7 @@ describe("list matcher", () => {
   });
 
   it("should parse atom inside list", () => {
-    const g = pegc('S <- { "A" }', { [sym('S')]: (_, x) => `y${x}y` });
+    const g = pegc('S <- { "A" }', { S: (_, x) => `y${x}y` });
     expect(g.matchl(["A"])).toBe("yAy");
   });
 });
@@ -110,7 +110,7 @@ describe("list matcher", () => {
 describe("input parser", () => {
   describe("Actions", () => {
     it("should execute action for Non-Terminal", () => {
-      const a = { [sym('Num')]: (_, x) => parseInt((Array.isArray(x) && x.join('') || x)) };
+      const a = { Num: (_, x) => parseInt((Array.isArray(x) && x.join('') || x)) };
       const g = pegc("Num <- [0-9]+", a);
       expect(g.match("1")).toBe(1);
     });
