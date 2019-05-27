@@ -170,7 +170,7 @@ describe("input parser", () => {
       const g = pegc("A <- !'b' .");
       expect(g.match("a")).toEqual(['A', 'a']);
       expect(g.match("c")).toEqual(['A', 'c']);
-      expect(() => g.match("b")).toThrow(new Error('Predicate at pos 0'));
+      expect(() => g.match("b")).toThrow(new Error('Predicate at pos 1'));
     });
     it("should match any char", () => {
       const g = pegc("A <- .");

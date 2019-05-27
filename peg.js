@@ -52,10 +52,17 @@ const consp = Array.isArray;
 // Basic machinery to parse things
 function scan(source) {
   let cursor = 0;
-  const error = (msg) => { throw new Error(msg + ` at pos ${cursor}`); };
+  let ffp = 0;
+  // Track Farthest Failure Position
+  const ipp = (x) => {
+    if (++cursor > ffp) ffp = cursor;
+    return x;
+  };
+
+  const error = (msg) => { throw new Error(msg + ` at pos ${ffp}`); };
   const checkeos = () => eos() && error('End of stream');
   const currc = () => source[cursor] || '';
-  const nextc = () => checkeos() || source[cursor++];
+  const nextc = () => checkeos() || ipp(source[cursor]);
   const testc = (c) => currc() === c;
   const match = (c) => testc(c) ? nextc() : false;
   const mustc = (c) => testc(c) || error(`Missing '${c} (mustc)'`);
