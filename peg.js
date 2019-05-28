@@ -36,13 +36,14 @@ const not = (thing) => {
 const and = (thing) => not(() => not(thing));
 
 // Helper for flattening sequences
-const singleOrList = (x) => ((
-  consp(x)                 &&   // It's a list
-  !(x instanceof List)     &&   // It's not a user list
-  typeof x[0] !== 'symbol' &&   // And not a function
-  x.length === 1           &&   // And has a single element
-  x[0])                    ||   // Then return first item
-  x);                           // Or return
+const singleOrList = (x) => {
+  if (consp(x)                 && // It's a list
+      !(x instanceof List)     && // But not a user list
+      typeof x[0] !== 'symbol' && // And not a function
+      x.length === 1)             // And has a single element
+    return x[0];
+  return x;
+};
 
 // We lisp yet
 const car = ([h, ...t]) => h;
@@ -388,7 +389,7 @@ function pegc(g, a) {
     // better way to do this.
     const cleanList = (l) => {
       if (!consp(l)) return l;
-      const out = l.filter(x => x);
+      const out = l.filter(x => x !== null);
       return out.length > 0 ? out : null;
     };
     const cl = (l) => singleOrList(cleanList(l));
