@@ -353,13 +353,14 @@ function pegc(g, a) {
   const { grammar: G, start } = pegt(peg(scan(g)).Grammar());
 
   const action = (id, th) => {
+    const idKey = Symbol.keyFor(id);
     if (a) {
-      const ath = a[Symbol.keyFor(id)];
+      const ath = a[idKey];
       if (typeof ath === 'function') {
-        return ath(id, th);
+        return ath(idKey, th);
       }
     }
-    return [Symbol.keyFor(id), th];
+    return [idKey, th];
   };
 
   const match = (s) => {

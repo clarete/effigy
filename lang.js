@@ -6,15 +6,15 @@ const py37 = require('./arch/py37');
 
 const join = x => Array.isArray(x) && x.flat().join('') || x;
 const toint = (x, b) => parseInt(join(x), b);
-const lift = (_, x) => (peg.consp(x) && peg.consp(x[0]))
-  ? [Symbol.keyFor(_), x]
+const lift = (n, x) => (peg.consp(x) && peg.consp(x[0]))
+  ? [n, x]
   : x;
 
 const parserActions = {
   DEC: (_, x) => toint(x, 10),
   HEX: (_, x) => toint(x, 16),
   BIN: (_, x) => toint(join(x).replace('0b', ''), 2),
-  Identifier: (n, x) => [Symbol.keyFor(n), join(x)],
+  Identifier: (n, x) => [n, join(x)],
   CallParams: (_, x) => x,
 
   Comparison: lift,
