@@ -2,18 +2,33 @@
 
 Module     <- { "Module" Code }
 Code       <- { "Code" Expression }
-Expression <- { "Expression" Term }
-Term       <- { "Term" Factor }
-Factor     <- { "Factor" Power }
-Power      <- { "Power" Unary }
-Unary      <- { "Unary" Primary }
-Primary    <- { "Primary" Value }
-            / { "Primary" FunCall }
+            / { "Code" Statement }
+
+Statement  <- { "Statement" Assignment }
+
+Assignment <- { "Assignment" { Identifier Expression } }
+
+Expression <- { "Expression" Comparison }
+            / { "Expression" Term }
+            / { "Expression" Factor }
+            / { "Expression" Power }
+            / { "Expression" Unary }
+            / { "Expression" Primary }
+
+Comparison <- { "Comparison" Term } / Expression
+Term       <- { "Term" Factor }     / Expression
+Factor     <- { "Factor" Power }    / Expression
+Power      <- { "Power" Unary }     / Expression
+Unary      <- { "Unary" Primary }   / Expression
+Primary    <- Value
+            / FunCall
+            / Identifier
+            / Expression
 
 Value      <- { "Value" Number }
 
-FunCall    <- { "FunCall" { Atom FunParams } }  # One or more parameter
-            / { "FunCall" Atom }                # No parameters
+FunCall    <- { "FunCall" { Identifier FunParams } }  # One or more parameters
+            / { "FunCall" Identifier }                # No parameters
 
 FunParams  <- { Expression* }
             / Expression

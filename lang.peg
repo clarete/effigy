@@ -1,23 +1,24 @@
 # Scopes
 Module          <- _ Code _EndOfFile
 Code            <- (Statement / Expression)+
-CodeBlock       <- _CBOP Code _CBCL
-CodeOrBlock     <- CodeBlock / Code
+CodeBlock       <- _CBOP Code* _CBCL / Statement / Expression
 
 # Expressions
-Expression      <- Term
+Expression      <- Comparison
+Comparison      <- Term ((EQ / NEQ / LTE / GTE / LT / GT) Term)*
+
 Term            <- Factor ((PLUS / MINUS) Factor)*
 Factor          <- Power ((STAR / SLASH) Power)*
 Power           <- Unary ((POWER / MOD) Unary)*
 Unary           <- (PLUS / MINUS)? Primary
 Primary         <- _PROP Expression _PRCL
                  / Value
-                 / FunDef
                  / FunCall
+                 / FunDef
                  / Identifier
 
 # Function Declaration
-FunDef          <- FN Identifier? DefParams CodeOrBlock
+FunDef          <- _FN Identifier? DefParams CodeBlock
 DefParams       <- _PROP DefParam? (_PARAMSEP DefParam)* _PRCL
 DefParam        <- Identifier (_ASSIGN Expression)?
 
@@ -30,13 +31,13 @@ Statement       <- ReturnStm / WhileStm / ForStm / IfStm / FunDef / Assignment
 Assignment      <- Identifier _ASSIGN Expression
 
 # Control Flow Statements
-ForStm          <- FOR ForSteps CodeBlock
-ForSteps        <- _PROP Assignment FORSEP Expression FORSEP Expression _PRCL
+ForStm          <- _FOR ForSteps CodeBlock
+ForSteps        <- _PROP (Expression / Assignment) _PARAMSEP Expression _PARAMSEP Expression _PRCL
 Test            <- _PROP Expression _PRCL
-WhileStm        <- WHILE Test CodeOrBlock
-IfStm           <- IF Test CodeOrBlock ElseStm?
-ElseStm         <- ELSE CodeOrBlock
-ReturnStm       <- RETURN Expression
+WhileStm        <- _WHILE Test CodeBlock
+IfStm           <- _IF Test CodeBlock ElseStm?
+ElseStm         <- _ELSE CodeBlock
+ReturnStm       <- _RETURN Expression
 
 # Values
 Value           <- Number / String / BOOL
@@ -54,46 +55,48 @@ HEX             <- '0x' [0-9a-fA-F]+       _
 BOOL            <- ('true' / 'false')      _
 
 # Keywords
-BREAK           <- 'break'        _
-CASE            <- 'case'         _
-CONTINUE        <- 'continue'     _
-EACH            <- 'each'         _
-ELSE            <- 'else'         _
-FOR             <- 'for'          _
-FN              <- 'fn'           _
-WHILE           <- 'while'        _
-IF              <- 'if'           _
-MATCH           <- 'match'        _
-RETURN          <- 'return'       _
-SWITCH          <- 'switch'       _
+_BREAK          <- 'break'        _
+_CONTINUE       <- 'continue'     _
+_ELSE           <- 'else'         _
+_FOR            <- 'for'          _
+_FN             <- 'fn'           _
+_WHILE          <- 'while'        _
+_IF             <- 'if'           _
+_RETURN         <- 'return'       _
 
 # Lexical Delimiters
 _DQUOTE         <- '"'
 _PARAMSEP       <- ',' _
-FORSEP          <- ';' _
 _PROP           <- '(' _
 _PRCL           <- ')' _
 _CBOP           <- '{' _
 _CBCL           <- '}' _
-NEGATIVE        <- '-' _
 _ASSIGN         <- '=' _
 
-# Operators
+## Arithmetic Operators
 PLUS            <- '+'  _
 MINUS           <- '-'  _
 STAR            <- '*'  _
 SLASH           <- '/'  _
-OLT             <- '<'  _
-OLTE            <- '<=' _
-OGT             <- '>'  _
-OGTE            <- '>=' _
-OEQ             <- '==' _
+MOD             <- '%'  _
+POWER           <- '**' _
+
+## Comparison Operators
+EQ              <- '==' _
+NEQ             <- '!=' _
+LT              <- '<'  _
+GT              <- '>'  _
+LTE             <- '<=' _
+GTE             <- '>=' _
+
+## Bit Shifting
 RSHIFT          <- '>>' _
 LSHIFT          <- '<<' _
 
 # Whitespace Handling
 _               <- (Space / Comment)*
-Comment         <- '#' (!_EndOfLine .)* _EndOfLine
+Comment         <- '#' (!_EOL .)* _EOL
 Space           <- ' ' / '\t' / _EndOfLine
-_EndOfLine      <- '\r\n' / '\n' / '\r'
+_EndOfLine      <- ';' / _EOL
+_EOL            <- '\r\n' / '\n' / '\r'
 _EndOfFile      <- !.

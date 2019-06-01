@@ -4,17 +4,25 @@ const path = require('path');
 const peg = require('./peg');
 const py37 = require('./arch/py37');
 
-const { sym } = peg;
-
 const join = x => Array.isArray(x) && x.flat().join('') || x;
 const toint = (x, b) => parseInt(join(x), b);
-const single = (s, x) => x.length === 2 ? x[1] : [s, x];
+const lift = (_, x) => (peg.consp(x) && peg.consp(x[0]))
+  ? [Symbol.keyFor(_), x]
+  : x;
+
 const parserActions = {
   DEC: (_, x) => toint(x, 10),
   HEX: (_, x) => toint(x, 16),
   BIN: (_, x) => toint(join(x).replace('0b', ''), 2),
   Identifier: (n, x) => [Symbol.keyFor(n), join(x)],
   CallParams: (_, x) => x,
+
+  Comparison: lift,
+  Term: lift,
+  Factor: lift,
+  Power: lift,
+  Unary: lift,
+  Primary: lift,
 };
 
 function parse(input) {
@@ -90,21 +98,18 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
   };
 
   const actions = {
-    Module: module,
+    Module: (_, x) => module(),
+    Assignment: (_, x) => assignment(x[1]),
+    FunParams: (_, x) => x,
+    FunCall: (_, x) => funCall(x[1]),
+    Number: (_, x) => loadConst(x[1]),
+    Atom: (_, x) => x,
+
     Code: unwrap,
     Expression: unwrap,
-    Assignment: (_, x) => assignment(x[1]),
-    Term: unwrap,
-    Factor: unwrap,
-    Power: unwrap,
-    Unary: unwrap,
     Primary: unwrap,
     Value: unwrap,
-    FunParams: (_, x) => x,
     Identifier: unwrap,
-    FunCall: (_, x) => funCall(x[1]),
-    Number: (_, x) => x[1],
-    Atom: (_, x) => x,
   };
 
   // 3.2. Traversal
