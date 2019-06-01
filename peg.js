@@ -414,11 +414,8 @@ function pegc(g, a) {
       } else if (typeof e === 'string') {
         return s.must(e);
       } else if (typeof e === 'symbol') {
-        if (skipcapture(e)) {
-          matchexpr(V(G, e));
-          return null;
-        }
-        return action(e, cl(matchexpr(V(G, e))));
+        const output = action(e, cl(matchexpr(V(G, e))));
+        return skipcapture(e) ? null : output;
       }
       throw new Error('Unreachable');
     };
