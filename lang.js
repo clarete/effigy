@@ -77,19 +77,16 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
   };
   const funCall = c => {
     if (peg.consp(c)) {
-      const [name, args] = c;
-      loadName(name);
-      if (peg.consp(args)) {    // More than one parameter
-        for (const i of args) loadConst(i);
-        emit('call-function', args.length);
-      } else {                  // Single parameter
-        loadConst(args);
-        emit('call-function', 1);
-      }
-    } else {                    // No parameters
-      loadName(c);
+      const [, args] = c;
+      // More than one parameter
+      if (peg.consp(args)) emit('call-function', args.length);
+      // Single Param
+      else emit('call-function', 1);
+    } else {
+      // No Params
       emit('call-function', 0);
     }
+    return c;
   };
   const module = () => {
     emit('pop-top');
@@ -98,8 +95,8 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
   };
 
   const actions = {
-    Module: (_, x) => module(),
-    Assignment: (_, x) => assignment(x[1]),
+    Module: (_, x) => module() || x[1],
+    Identifier: (_, x) => loadName(x[1]),
     FunParams: (_, x) => x,
     FunCall: (_, x) => funCall(x[1]),
     Number: (_, x) => loadConst(x[1]),
@@ -109,7 +106,6 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
     Expression: unwrap,
     Primary: unwrap,
     Value: unwrap,
-    Identifier: unwrap,
   };
 
   // 3.2. Traversal
@@ -124,7 +120,7 @@ function translateFile(filename) {
   const input = fs.readFileSync(file).toString();
 
   const tree = parse(input);
-  const code = translate(tree, 0, py37.compiler(path.basename(file)));
+  const code = translate(tree, 0, py37.compiler(file));
 
   // Read modification time of the source file
   const stats = fs.statSync(file);
