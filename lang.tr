@@ -19,6 +19,7 @@ BinOp      <- { "BinOp" { BINOP Primary Primary } }
 
 BINOP      <- '**' / '+' / '-' / '*' / '/' / '%'
             / '==' / '!=' / '>=' / '<=' / '>' / '<'
+            / '<<' / '>>' / '|' / '&' / '^'
 
 Unary      <- { "Unary" Primary }   / Expression
 

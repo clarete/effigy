@@ -119,6 +119,23 @@ describe("Translate", () => {
           ],
         });
       });
+      it("should provide bit shifting operators", () => {
+        const tree = parse('2 >> 3');
+        const code = translate(tree);
+
+        expect(code).toEqual({
+          constants: [3, 2, null],
+          names: [],
+          instructions: [
+            ['load-const', 0],
+            ['load-const', 1],
+            ['binary-rshift'],
+            ['pop-top'],
+            ['load-const', 2],
+            ['return-value'],
+          ],
+        });
+      });
     });                         // BinOp
   });                           // Expression
 

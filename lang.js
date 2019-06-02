@@ -6,7 +6,10 @@ const py37 = require('./arch/py37');
 
 
 // Operator Associativity
-const leftAssocOps = ['+', '-'];
+const leftAssocOps = [
+  '+', '-', '==', '!=', '>=', '<=', '>', '<',
+  '<<', '>>', '&', '|', '^',
+];
 const rightAssocOps = ['*', '/', '%', '**'];
 
 // Helpers for cleaning up/simplifying AST
@@ -49,11 +52,24 @@ const parserActions = {
   SLASH: (_, x) => x,
   POWER: (_, x) => x,
   MOD: (_, x) => x,
+  EQ: (_, x) => x,
+  NEQ: (_, x) => x,
+  LT: (_, x) => x,
+  GT: (_, x) => x,
+  LTE: (_, x) => x,
+  GTE: (_, x) => x,
+  RSHIFT: (_, x) => x,
+  LSHIFT: (_, x) => x,
+  BAND: (_, x) => x,
+  BOR: (_, x) => x,
+  BXOR: (_, x) => x,
   // Not relevant if captured single result
-  Comparison: lift,
   Unary: lift,
   Primary: lift,
   // Associativity of binary operators
+  BitLogical: leftAssoc,
+  BitShifting: leftAssoc,
+  Comparison: leftAssoc,
   Term: leftAssoc,
   Factor: rightAssoc,
   Power: rightAssoc,
@@ -99,18 +115,18 @@ function dummyCompiler() {
 }
 
 const BIN_OP_MAP = {
-   '**': 'binary-power',
-    '%': 'binary-modulo',
-    '+': 'binary-add',
-    '-': 'binary-subtract',
-    '*': 'binary-multiply',
-    '/': 'binary-true-divide',
-   '//': 'binary-floor-divide', // Currently not exposed by AST
-   '<<': 'binary-lshift',
-   '>>': 'binary-rshift',
-   'or': 'binary-or',
-  'and': 'binary-and',
-  'xor': 'binary-xor',
+  '**': 'binary-power',
+   '%': 'binary-modulo',
+   '+': 'binary-add',
+   '-': 'binary-subtract',
+   '*': 'binary-multiply',
+   '/': 'binary-true-divide',
+  '//': 'binary-floor-divide', // Currently not exposed by AST
+  '<<': 'binary-lshift',
+  '>>': 'binary-rshift',
+   '|': 'binary-or',
+   '&': 'binary-and',
+   '^': 'binary-xor',
 };
 
 function translate(parseTree, flags=0, compiler=dummyCompiler()) {
