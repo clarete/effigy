@@ -3,6 +3,7 @@
 Module     <- { "Module" Code }
 Code       <- { "Code" Expression }
             / { "Code" Statement }
+            / { "Code" { (Statement / Expression)+ } }
 
 Statement  <- { "Statement" Assignment }
 

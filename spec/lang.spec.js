@@ -4,7 +4,7 @@ const { sym } = require('../peg');
 describe("Translate", () => {
   describe("Expression", () => {
     describe("FunCall", () => {
-      it("with no parameters", () => {
+      it("should work with no parameters", () => {
         const tree = parse("print()");
         const code = translate(tree);
 
@@ -21,7 +21,7 @@ describe("Translate", () => {
         });
       });
 
-      it("with one number parameter", () => {
+      it("should work with one number parameter", () => {
         const tree = parse("print(42)");
         const code = translate(tree);
 
@@ -39,7 +39,7 @@ describe("Translate", () => {
         });
       });
 
-      it("with two number parameter", () => {
+      it("should work with two number parameter", () => {
         const tree = parse("print(42, 43)");
         const code = translate(tree);
 
@@ -57,6 +57,27 @@ describe("Translate", () => {
           ],
         });
       });
-    });
-  });
+
+      it("should execute two fun calls in a row", () => {
+        const tree = parse(`print(1); print(2)`);
+        const code = translate(tree);
+
+        expect(code).toEqual({
+          constants: [1, 2, null],
+          names: ['print'],
+          instructions: [
+            ['load-name', 0],
+            ['load-const', 0],
+            ['call-function', 1],
+            ['load-name', 0],
+            ['load-const', 1],
+            ['call-function', 1],
+            ['pop-top'],
+            ['load-const', 2],
+            ['return-value'],
+          ],
+        });
+      });
+    });                         // FunCall
+  });                           // Expression
 });

@@ -102,7 +102,6 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
     Number: (_, x) => loadConst(x[1]),
     Atom: (_, x) => x,
 
-    Code: unwrap,
     Expression: unwrap,
     Primary: unwrap,
     Value: unwrap,
