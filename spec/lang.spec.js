@@ -100,8 +100,26 @@ describe("Translate", () => {
           ],
         });
       });
-    });                         // BinOp
+      it("should work within function calls", () => {
+        const tree = parse('print(2 + 3)');
+        const code = translate(tree);
 
+        expect(code).toEqual({
+          constants: [3, 2, null],
+          names: ['print'],
+          instructions: [
+            ['load-name', 0],
+            ['load-const', 0],
+            ['load-const', 1],
+            ['binary-add'],
+            ['call-function', 1],
+            ['pop-top'],
+            ['load-const', 2],
+            ['return-value'],
+          ],
+        });
+      });
+    });                         // BinOp
   });                           // Expression
 
   describe('Statement', () => {

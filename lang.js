@@ -10,7 +10,7 @@ const leftAssocOps = ['+', '-'];
 const rightAssocOps = ['*', '/', '%', '**'];
 
 // Helpers for cleaning up/simplifying AST
-const join = x => Array.isArray(x) && x.flat().join('') || x;
+const join = x => peg.consp(x) && x.flat().join('') || x;
 const toint = (x, b) => parseInt(join(x), b);
 const multi = x => peg.consp(x) && peg.consp(x[0]);
 const lift = (n, x) => peg.consp(x) && peg.consp(x[0]) ? [n, x] : x;
@@ -138,7 +138,8 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
     if (peg.consp(c)) {
       const [, args] = c;
       // More than one parameter
-      if (peg.consp(args)) emit('call-function', args.length);
+      if (peg.consp(args) && peg.consp(args[0]))
+        emit('call-function', args.length);
       // Single Param
       else emit('call-function', 1);
     } else {
@@ -163,9 +164,8 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
     Atom: (_, x) => x,
     BinOp: (_, x) => {
       emit(BIN_OP_MAP[x[1][0][1]]);
-      return x;
+      return x[1];
     },
-    Expression: unwrap,
     Primary: unwrap,
     Value: unwrap,
   };
