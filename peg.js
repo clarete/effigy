@@ -135,7 +135,7 @@ function scanl(tree) {
     return current;
   };
 
-  const listStack = [];
+  let listStack = [];
 
   // JavaScript doesn't like `[] === []` for some reason :/
   const isTheEmptyList = (l) =>
@@ -161,8 +161,9 @@ function scanl(tree) {
 
   const backtrack = (exp) => {
     const saved = current;
+    const savedList = listStack.slice();
     try { return exp(); }
-    catch (e) { current = saved; throw e; }
+    catch (e) { current = saved; listStack = savedList; throw e; }
   };
 
   const Choice = (...a) =>
