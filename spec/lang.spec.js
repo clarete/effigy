@@ -80,4 +80,29 @@ describe("Translate", () => {
       });
     });                         // FunCall
   });                           // Expression
+
+  describe('Statement', () => {
+    describe('Assignment', () => {
+      it("should work with one variable", () => {
+        const tree = parse(`a = 51; print(a)`);
+        const code = translate(tree);
+
+        expect(code).toEqual({
+          constants: [51, null],
+          names: ['a', 'print'],
+          instructions: [
+            ['load-const', 0],
+            ['store-name', 0],
+            ['load-name', 1],
+            ['load-name', 0],
+            ['call-function', 1],
+            ['pop-top'],
+            ['load-const', 1],
+            ['return-value'],
+          ],
+        });
+      });
+    });
+  });
+
 });

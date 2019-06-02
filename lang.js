@@ -10,12 +10,22 @@ const lift = (n, x) => (peg.consp(x) && peg.consp(x[0]))
   ? [n, x]
   : x;
 
+const rename = (r, n) => {
+  const [,v] = r;
+  return [n, v];
+};
+
 const parserActions = {
   DEC: (_, x) => toint(x, 10),
   HEX: (_, x) => toint(x, 16),
   BIN: (_, x) => toint(join(x).replace('0b', ''), 2),
   Identifier: (n, x) => [n, join(x)],
   CallParams: (_, x) => x,
+
+  Assignment: (n, x) => {
+    const [identifier, expression] = x;
+    return [n, [expression, rename(identifier, "StoreName")]];
+  },
 
   Comparison: lift,
   Term: lift,
@@ -75,6 +85,11 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
     emit('load-name', newn);
     return newn;
   };
+  const storeName = c => {
+    const newn = newName(c);
+    emit('store-name', newn);
+    return newn;
+  };
   const funCall = c => {
     if (peg.consp(c)) {
       const [, args] = c;
@@ -97,6 +112,7 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
   const actions = {
     Module: (_, x) => module() || x[1],
     Identifier: (_, x) => loadName(x[1]),
+    StoreName: (_, x) => storeName(x[1]),
     FunParams: (_, x) => x,
     FunCall: (_, x) => funCall(x[1]),
     Number: (_, x) => loadConst(x[1]),

@@ -7,7 +7,7 @@ Code       <- { "Code" Expression }
 
 Statement  <- { "Statement" Assignment }
 
-Assignment <- { "Assignment" { Identifier Expression } }
+Assignment <- { "Assignment" { Expression StoreName } }
 
 Expression <- { "Expression" Comparison }
             / { "Expression" Term }
@@ -36,5 +36,6 @@ FunParams  <- { Expression* }
 
 Number     <- { "Number" Atom }
 Identifier <- { "Identifier" Atom  }
+StoreName  <- { "StoreName" Atom  }
 
 Atom       <- !{ .* } .
