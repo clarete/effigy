@@ -80,6 +80,25 @@ describe("Translate", () => {
       });
     });                         // FunCall
 
+    describe("Unary", () => {
+      it("should provide negative operation", () => {
+        const tree = parse('-a');
+        const code = translate(tree);
+
+        expect(code).toEqual({
+          constants: [ null ],
+          names: ['a'],
+          instructions: [
+            ['load-name', 0],
+            ['unary-negative'],
+            ['pop-top'],
+            ['load-const', 0],
+            ['return-value'],
+          ],
+        });
+      });
+    });                         // Unary
+
     describe('BinOp', () => {
       it("should support simple summation", () => {
         const tree = parse('2 + 3 * 4');

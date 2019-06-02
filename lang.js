@@ -64,8 +64,12 @@ const parserActions = {
   BOR: (_, x) => x,
   BXOR: (_, x) => x,
   // Not relevant if captured single result
-  Unary: lift,
   Primary: lift,
+  // Omit unary wrapper if it's not an unary operator
+  Unary: (n, x) => {
+    if (UN_OP_MAP[x[0]]) return [n, x];
+    return x;
+  },
   // Associativity of binary operators
   BitLogical: leftAssoc,
   BitShifting: leftAssoc,
@@ -113,6 +117,11 @@ function dummyCompiler() {
   // -- Basic interface for compiler
   return { emit, newConst, newName, output };
 }
+
+const UN_OP_MAP = {
+  '-': 'unary-negative',
+  '+': 'unary-positive',
+};
 
 const BIN_OP_MAP = {
   '**': 'binary-power',
@@ -180,6 +189,10 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
     Atom: (_, x) => x,
     BinOp: (_, x) => {
       emit(BIN_OP_MAP[x[1][0][1]]);
+      return x[1];
+    },
+    Unary: (_, x) => {
+      emit(UN_OP_MAP[x[1][0][1]]);
       return x[1];
     },
     Primary: unwrap,

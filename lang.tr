@@ -13,7 +13,6 @@ Expression <- { "Expression" Unary }
             / { "Expression" Primary }
             / { "Expression" BinOp }
             / BinOp
-# BinOp      <- { "BinOp" { BINOP Expression Expression }* }
 
 BinOp      <- { "BinOp" { BINOP Primary Primary } }
 
@@ -21,7 +20,10 @@ BINOP      <- '**' / '+' / '-' / '*' / '/' / '%'
             / '==' / '!=' / '>=' / '<=' / '>' / '<'
             / '<<' / '>>' / '|' / '&' / '^'
 
-Unary      <- { "Unary" Primary }   / Expression
+Unary      <- { "Unary" Primary }
+            / { "Unary" { UNOP Primary } }
+
+UNOP       <- '-' / '+'
 
 Primary    <- Value
             / FunCall
