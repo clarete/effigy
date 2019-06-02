@@ -79,6 +79,29 @@ describe("Translate", () => {
         });
       });
     });                         // FunCall
+
+    describe('BinOp', () => {
+      it("should support simple summation", () => {
+        const tree = parse('2 + 3 * 4');
+        const code = translate(tree);
+
+        expect(code).toEqual({
+          constants: [3, 4, 2, null],
+          names: [],
+          instructions: [
+            ['load-const', 0],
+            ['load-const', 1],
+            ['binary-multiply'],
+            ['load-const', 2],
+            ['binary-add'],
+            ['pop-top'],
+            ['load-const', 3],
+            ['return-value'],
+          ],
+        });
+      });
+    });                         // BinOp
+
   });                           // Expression
 
   describe('Statement', () => {

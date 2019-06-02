@@ -9,18 +9,19 @@ Statement  <- { "Statement" Assignment }
 
 Assignment <- { "Assignment" { Expression StoreName } }
 
-Expression <- { "Expression" Comparison }
-            / { "Expression" Term }
-            / { "Expression" Factor }
-            / { "Expression" Power }
-            / { "Expression" Unary }
+Expression <- { "Expression" Unary }
             / { "Expression" Primary }
+            / { "Expression" BinOp }
+            / BinOp
+# BinOp      <- { "BinOp" { BINOP Expression Expression }* }
 
-Comparison <- { "Comparison" Term } / Expression
-Term       <- { "Term" Factor }     / Expression
-Factor     <- { "Factor" Power }    / Expression
-Power      <- { "Power" Unary }     / Expression
+BinOp      <- { "BinOp" { BINOP Primary Primary } }
+
+BINOP      <- '**' / '+' / '-' / '*' / '/' / '%'
+            / '==' / '!=' / '>=' / '<=' / '>' / '<'
+
 Unary      <- { "Unary" Primary }   / Expression
+
 Primary    <- Value
             / FunCall
             / Identifier

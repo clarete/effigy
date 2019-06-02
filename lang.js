@@ -4,35 +4,64 @@ const path = require('path');
 const peg = require('./peg');
 const py37 = require('./arch/py37');
 
+
+// Operator Associativity
+const leftAssocOps = ['+', '-'];
+const rightAssocOps = ['*', '/', '%', '**'];
+
+// Helpers for cleaning up/simplifying AST
 const join = x => Array.isArray(x) && x.flat().join('') || x;
 const toint = (x, b) => parseInt(join(x), b);
-const lift = (n, x) => (peg.consp(x) && peg.consp(x[0]))
-  ? [n, x]
-  : x;
+const multi = x => peg.consp(x) && peg.consp(x[0]);
+const lift = (n, x) => peg.consp(x) && peg.consp(x[0]) ? [n, x] : x;
+const rename = ([,v], n) => [n, v];
 
-const rename = (r, n) => {
-  const [,v] = r;
-  return [n, v];
+// Correct associativity for operators
+const leftAssoc = (_, x) => {
+  if (!multi(x)) return x;
+  const [head, ...[tail]] = x;
+  if (leftAssocOps.includes(tail[0]))
+    return ["BinOp", [tail[0], tail[1], head]];
+  return tail.reduce((t, h) => ["BinOp", [...h, t]], head);
 };
+function rightAssoc(_, x) {
+  if (!multi(x)) return x;
+  const [head, ...[tail]] = x;
+  if (rightAssocOps.includes(tail[0]))
+    return ["BinOp", [tail[0], head, tail[1]]];
+  return tail.reduce((t, h) => {
+    const [nh, ...nt] = [...h, t];
+    return ["BinOp", [nh, ...nt]];
+  }, head);
+}
 
 const parserActions = {
+  // Minimal transformation for numbers & names
   DEC: (_, x) => toint(x, 10),
   HEX: (_, x) => toint(x, 16),
   BIN: (_, x) => toint(join(x).replace('0b', ''), 2),
   Identifier: (n, x) => [n, join(x)],
+  // We'll take their value the way it is
   CallParams: (_, x) => x,
-
+  PLUS: (_, x) => x,
+  MINUS: (_, x) => x,
+  STAR: (_, x) => x,
+  SLASH: (_, x) => x,
+  POWER: (_, x) => x,
+  MOD: (_, x) => x,
+  // Not relevant if captured single result
+  Comparison: lift,
+  Unary: lift,
+  Primary: lift,
+  // Associativity of binary operators
+  Term: leftAssoc,
+  Factor: rightAssoc,
+  Power: rightAssoc,
+  // Fix associativity of assignment operator
   Assignment: (n, x) => {
     const [identifier, expression] = x;
     return [n, [expression, rename(identifier, "StoreName")]];
   },
-
-  Comparison: lift,
-  Term: lift,
-  Factor: lift,
-  Power: lift,
-  Unary: lift,
-  Primary: lift,
 };
 
 function parse(input) {
@@ -68,6 +97,21 @@ function dummyCompiler() {
   // -- Basic interface for compiler
   return { emit, newConst, newName, output };
 }
+
+const BIN_OP_MAP = {
+   '**': 'binary-power',
+    '%': 'binary-modulo',
+    '+': 'binary-add',
+    '-': 'binary-subtract',
+    '*': 'binary-multiply',
+    '/': 'binary-true-divide',
+   '//': 'binary-floor-divide', // Currently not exposed by AST
+   '<<': 'binary-lshift',
+   '>>': 'binary-rshift',
+   'or': 'binary-or',
+  'and': 'binary-and',
+  'xor': 'binary-xor',
+};
 
 function translate(parseTree, flags=0, compiler=dummyCompiler()) {
   // 3. Traverse the parse tree and emit code
@@ -117,7 +161,10 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
     FunCall: (_, x) => funCall(x[1]),
     Number: (_, x) => loadConst(x[1]),
     Atom: (_, x) => x,
-
+    BinOp: (_, x) => {
+      emit(BIN_OP_MAP[x[1][0][1]]);
+      return x;
+    },
     Expression: unwrap,
     Primary: unwrap,
     Value: unwrap,
@@ -135,7 +182,7 @@ function translateFile(filename) {
   const input = fs.readFileSync(file).toString();
 
   const tree = parse(input);
-  const code = translate(tree, 0, py37.compiler(file));
+  const code = translate(tree, 0, py37.compiler(path.basename(file)));
 
   // Read modification time of the source file
   const stats = fs.statSync(file);
