@@ -91,31 +91,29 @@ function parse(input) {
   return peg.pegc(grammar, parserActions).match(input);
 }
 
-function traverse(tree, actions) {
-  // 1. Parse the PEG description
-  const grammar = fs.readFileSync(path.resolve('lang.tr')).toString();
-  // 2. Match the PEG against the input parse
-  return peg.pegc(grammar, actions).matchl(tree);
-}
-
 const addToTable = (t, i) => {
   const pos = t.indexOf(i);
   return pos >= 0 ? pos : t.push(i)-1;
 };
 
 function dummyCompiler() {
-  // Data structures
-  const instructions = [];
-  const code = { constants: [], names: [], instructions };
-  // -- Accessor & Mutator for instructions
-  const output = () => code;
+  // Code object shape
+  const code = () => ({ constants: [], names: [], instructions: [] });
+  // Support for nested functions
+  const stack = [];
+  // Current object
+  const curr = () => stack[stack.length-1];
+  // Control scope
+  const enter = () => stack.push(code());
+  const leave = () => stack.pop();
+  // -- Mutator for instructions
   const emit = (op, arg) =>
-    instructions.push(arg !== undefined ? [op, arg] : [op]);
+    curr().instructions.push(arg !== undefined ? [op, arg] : [op]);
   // -- Mutators for adding new items to tables
-  const newConst = c => addToTable(code.constants, c);
-  const newName = c => addToTable(code.names, c);
+  const newConst = c => addToTable(curr().constants, c);
+  const newName = c => addToTable(curr().names, c);
   // -- Basic interface for compiler
-  return { emit, newConst, newName, output };
+  return { emit, newConst, newName, enter, leave };
 }
 
 const UN_OP_MAP = {
@@ -140,9 +138,7 @@ const BIN_OP_MAP = {
 
 function translate(parseTree, flags=0, compiler=dummyCompiler()) {
   // 3. Traverse the parse tree and emit code
-  // 3.1. Prepare the translation table
-  const unwrap = (_, x) => x[1];
-  const { emit, newConst, newName, output } = compiler;
+  const { enter, leave, emit, newConst, newName } = compiler;
   // Emitters
   const loadConst = c => {
     const newc = newConst(c);
@@ -173,37 +169,43 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
     }
     return c;
   };
-  const module = () => {
+  const lambdaDef = visit => {
+    enter();
+    let v;
+    try { v = visit(); }
+    catch (e) { leave(); throw e; }
+    emit('return-value');
+    loadConst(leave());
+    loadConst('<lambda>');
+    emit('make-function');
+    return v;
+  };
+  const module = visit => {
+    enter();
+    visit();
     emit('pop-top');
     loadConst(null);
     emit('return-value');
+    return leave();
   };
-
+  // 3.1. Prepare the translation table
   const actions = {
-    Module: (_, x) => module() || x[1],
-    Identifier: (_, x) => loadName(x[1]),
-    StoreName: (_, x) => storeName(x[1]),
-    FunParams: (_, x) => x,
-    FunCall: (_, x) => funCall(x[1]),
-    Number: (_, x) => loadConst(x[1]),
-    Atom: (_, x) => x,
-    BinOp: (_, x) => {
-      emit(BIN_OP_MAP[x[1][0][1]]);
-      return x[1];
-    },
-    Unary: (_, x) => {
-      emit(UN_OP_MAP[x[1][0][1]]);
-      return x[1];
-    },
-    Primary: unwrap,
-    Value: unwrap,
+    Module: (_, x) => module(x),
+    Identifier: (_, x) => loadName(x()[1]),
+    StoreName: (_, x) => storeName(x()[1]),
+    FunParams: (_, x) => x(),
+    FunCall: (_, x) => funCall(x()[1]),
+    Number: (_, x) => loadConst(x()[1]),
+    Atom: (_, x) => x(),
+    BinOp: (_, x) => emit(BIN_OP_MAP[x()[1][0][1]]),
+    Unary: (_, x) => emit(UN_OP_MAP[x()[1][0][1]]),
+    Primary: (_, x) => x()[1],
+    Value: (_, x) => x()[1],
+    LambdaDef: (_, x) => lambdaDef(x),
   };
-
-  // 3.2. Traversal
-  traverse(parseTree, actions);
-  // 3.3. Return code object with list of generated opcodes and
-  // value tables
-  return output();
+  // 3.2. Traverse parse tree with transformation grammar
+  const trGrammar = fs.readFileSync(path.resolve('lang.tr')).toString();
+  return peg.pegc(trGrammar, actions).matchl(parseTree, peg.delayedAction);
 }
 
 function translateFile(filename) {
@@ -242,7 +244,6 @@ function translateFile(filename) {
 
 module.exports = {
   parse,
-  traverse,
   translate,
   translateFile,
 };

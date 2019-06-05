@@ -1,7 +1,7 @@
 # Scopes
 Module          <- _ Code _EndOfFile
-Code            <- (Statement / Expression)+
-CodeBlock       <- _CBOP Code* _CBCL / Statement / Expression
+Code            <- _CBOP (Statement / Expression)* _CBCL
+                 / (Statement / Expression)+
 
 # Expressions
 Expression      <- BitLogical
@@ -16,16 +16,17 @@ Unary           <- (PLUS / MINUS)? Primary
 Primary         <- _PROP Expression _PRCL
                  / Value
                  / FunCall
-                 / FunDef
+                 / LambdaDef
                  / Identifier
 
 # Function Declaration
-FunDef          <- _FN Identifier? DefParams CodeBlock
+FunDef          <- _FN Identifier DefParams Code
+LambdaDef       <- _FN DefParams Code
 DefParams       <- _PROP DefParam? (_PARAMSEP DefParam)* _PRCL
 DefParam        <- Identifier (_ASSIGN Expression)?
 
 # Function Call
-FunCall         <- (FunDef / Identifier) CallParams
+FunCall         <- (LambdaDef / Identifier) CallParams
 CallParams      <- _PROP Expression? (_PARAMSEP Expression)* _PRCL
 
 # Statements
@@ -33,12 +34,12 @@ Statement       <- ReturnStm / WhileStm / ForStm / IfStm / FunDef / Assignment
 Assignment      <- Identifier _ASSIGN Expression
 
 # Control Flow Statements
-ForStm          <- _FOR ForSteps CodeBlock
+ForStm          <- _FOR ForSteps Code
 ForSteps        <- _PROP (Expression / Assignment) _PARAMSEP Expression _PARAMSEP Expression _PRCL
 Test            <- _PROP Expression _PRCL
-WhileStm        <- _WHILE Test CodeBlock
-IfStm           <- _IF Test CodeBlock ElseStm?
-ElseStm         <- _ELSE CodeBlock
+WhileStm        <- _WHILE Test Code
+IfStm           <- _IF Test Code ElseStm?
+ElseStm         <- _ELSE Code
 ReturnStm       <- _RETURN Expression
 
 # Values

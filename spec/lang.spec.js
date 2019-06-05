@@ -1,5 +1,4 @@
 const { parse, translate } = require('../lang');
-const { sym } = require('../peg');
 
 describe("Translate", () => {
   describe("Expression", () => {
@@ -156,6 +155,33 @@ describe("Translate", () => {
         });
       });
     });                         // BinOp
+
+    describe("FunDef", () => {
+      it("should have anonymous function", () => {
+        const tree = parse('fn() 1');
+        const code = translate(tree);
+
+        expect(code).toEqual({
+          constants: [{
+            constants: [1],
+            names: [],
+            instructions: [
+              ['load-const', 0],
+              ['return-value'],
+            ],
+          }, '<lambda>', null],
+          names: [],
+          instructions: [
+            ['load-const', 0],
+            ['load-const', 1],
+            ['make-function'],
+            ['pop-top'],
+            ['load-const', 2],
+            ['return-value'],
+          ],
+        });
+      });
+    });
   });                           // Expression
 
   describe('Statement', () => {
