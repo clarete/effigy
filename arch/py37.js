@@ -73,6 +73,9 @@ function code(i, write) {
     if (Buffer.isBuffer(v)) {
       dbg("  - w_ref(Py_REFCNT(v) == 1): buffer");
       return false;
+    } else if (v instanceof PyCode) {
+      dbg("  - w_ref(Py_REFCNT(v) == 1): PyCode");
+      return false;
     }
     const w = refCache[[typeof v, v]];
     if (w !== undefined) {
@@ -174,31 +177,40 @@ const addToTable = (t, i) => {
 };
 
 function compiler(co_filename) {
-  const instructions = [];
-  const code = new PyCode({
-    co_flags: 64,
-    co_stacksize: 2,
-    co_name: '<module>',
-    co_filename,
-  });
-  // -- Accessor & Mutator for instructions
-  const output = () => {
+  // Code Object
+  const code = ({
+    co_name = "",
+    co_flags = 64,
+    co_stacksize = 2, // wat
+  }) => [
+    new PyCode({
+      co_flags, co_stacksize, co_name, co_filename,
+    }),
+    [],               // Instructions before being packed into co_code
+  ];
+  // Support for nested functions
+  const stack = [];
+  // Current object
+  const curr = () => stack[stack.length-1];
+  // Control scope
+  const enter = ({ co_name }) => stack.push(code({ co_name }));
+  const leave = () => {
+    const [c, instructions] = stack.pop();
     const instrlist = instructions.map(i => {
-      const [n, v] = i, code = opcodeFromString(n);
-      return v === undefined ? [code, 0] : [code, v];
+      const [n, v] = i, opc = opcodeFromString(n);
+      return v === undefined ? [opc, 0] : [opc, v];
     });
-    code.co_code = Buffer.from(instrlist.flat());
-    return code;
+    c.co_code = Buffer.from(instrlist.flat());
+    return c;
   };
-
+  // -- Mutator for instructions
   const emit = (op, arg) =>
-    instructions.push(arg !== undefined ? [op, arg] : [op]);
-
+    curr()[1].push(arg !== undefined ? [op, arg] : [op]);
   // -- Mutators for adding new items to tables
-  const newConst = c => addToTable(code.co_consts, c);
-  const newName = c => addToTable(code.co_names, c);
+  const newConst = c => addToTable(curr()[0].co_consts, c);
+  const newName = c => addToTable(curr()[0].co_names, c);
   // -- Basic interface for compiler
-  return { emit, newConst, newName, output };
+  return { emit, newConst, newName, enter, leave };
 }
 
 function header(mtime, length, write) {

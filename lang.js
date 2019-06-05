@@ -170,7 +170,7 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
     return c;
   };
   const lambdaDef = visit => {
-    enter();
+    enter({ co_name: '<lambda>', co_flags: 43 });
     let v;
     try { v = visit(); }
     catch (e) { leave(); throw e; }
@@ -181,9 +181,8 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
     return v;
   };
   const module = visit => {
-    enter();
+    enter({ co_name: '<module>' });
     visit();
-    emit('pop-top');
     loadConst(null);
     emit('return-value');
     return leave();
