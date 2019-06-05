@@ -350,21 +350,22 @@ const lst = (l) => consp(l) ? new List(...l) : new List(l);
 class Predicate {}
 const pred = () => new Predicate();
 
+// Immediate action
+const imAction = (a, id, th) => {
+  const idKey = Symbol.keyFor(id);
+  if (a) {
+    const ath = a[idKey];
+    if (typeof ath === 'function') {
+      return ath(idKey, th());
+    }
+  }
+  return [idKey, th()];
+};
+
 function pegc(g, a) {
   const { grammar: G, start } = pegt(peg(scan(g)).Grammar());
 
-  const action = (id, th) => {
-    const idKey = Symbol.keyFor(id);
-    if (a) {
-      const ath = a[idKey];
-      if (typeof ath === 'function') {
-        return ath(idKey, th);
-      }
-    }
-    return [idKey, th];
-  };
-
-  const match = (s) => {
+  const match = (s, actionfn) => {
     const prims = {
       zeroOrMore,
       oneOrMore,
@@ -378,7 +379,7 @@ function pegc(g, a) {
     };
 
     // How we call functions
-    const thunk = (v) => () => matchexpr(v);
+    const thunk = (v) => () => cl(matchexpr(v));
     const call = (fn, args) => fn(...args.slice(1).map(thunk));
     const callprim = (e) => {
       const fn = V(prims, e[0].name);
@@ -415,17 +416,17 @@ function pegc(g, a) {
       } else if (typeof e === 'string') {
         return s.must(e);
       } else if (typeof e === 'symbol') {
-        const output = action(e, cl(matchexpr(V(G, e))));
+        const output = actionfn(a, e, thunk(V(G, e)));
         return skipcapture(e) ? null : output;
       }
       throw new Error('Unreachable');
     };
     // Kickoff eval
-    return action(start, matchexpr(G[start]));
+    return actionfn(a, start, thunk(G[start]));
   };
   return {
-    match: (s) => match(scan(s)),
-    matchl: (l) => match(scanl([l])),
+    match: (s, af=imAction) => match(scan(s), af),
+    matchl: (l, af=imAction) => match(scanl([l]), af),
   };
 }
 
