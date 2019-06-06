@@ -1,7 +1,7 @@
 # Scopes
-Module          <- _ Code _EndOfFile
+Module          <- _ (Statement / Expression)+ _EndOfFile
 Code            <- _CBOP (Statement / Expression)* _CBCL
-                 / (Statement / Expression)+
+                 / (Statement / Expression)
 
 # Expressions
 Expression      <- BitLogical

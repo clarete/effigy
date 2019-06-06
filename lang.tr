@@ -1,9 +1,9 @@
 # -*- Mode: peg; -*-
 
-Module     <- { "Module" Code }
-Code       <- { "Code" Expression }
-            / { "Code" Statement }
-            / { "Code" { (Statement / Expression)+ } }
+Module     <- { "Module" { (Statement / Expression)+ } }
+            / { "Module" (Statement / Expression) }
+Code       <- { "Code" { (Statement / Expression)+ } }
+            / { "Code" (Statement / Expression) }
 
 Statement  <- { "Statement" Assignment }
 
