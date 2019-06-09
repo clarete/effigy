@@ -15,16 +15,8 @@ Expression <- { "Expression" Unary }
             / { "Expression" Lambda }
             / BinOp
 
-BinOp      <- { "BinOp" { BINOP Primary Primary } }
-
-BINOP      <- '**' / '+' / '-' / '*' / '/' / '%'
-            / '==' / '!=' / '>=' / '<=' / '>' / '<'
-            / '<<' / '>>' / '|' / '&' / '^'
-
-Unary      <- { "Unary" Primary }
-            / { "Unary" { UNOP Primary } }
-
-UNOP       <- '-' / '+'
+BinOp      <- { "BinOp" { Atom Primary Primary } }
+Unary      <- { "Unary" { Atom Primary } }
 
 Primary    <- Value
             / Call
