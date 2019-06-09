@@ -192,15 +192,15 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
     Module: (_, x) => module(x),
     Identifier: (_, x) => loadName(x()[1]),
     StoreName: (_, x) => storeName(x()[1]),
-    FunParams: (_, x) => x(),
-    FunCall: (_, x) => funCall(x()[1]),
+    Call: (_, x) => funCall(x()[1]),
+    CallParams: (_, x) => x(),
     Number: (_, x) => loadConst(x()[1]),
     Atom: (_, x) => x(),
     BinOp: (_, x) => emit(BIN_OP_MAP[x()[1][0][1]]),
     Unary: (_, x) => emit(UN_OP_MAP[x()[1][0][1]]),
     Primary: (_, x) => x()[1],
     Value: (_, x) => x()[1],
-    LambdaDef: (_, x) => lambdaDef(x),
+    Lambda: (_, x) => lambdaDef(x),
   };
   // 3.2. Traverse parse tree with transformation grammar
   const trGrammar = fs.readFileSync(path.resolve('lang.tr')).toString();

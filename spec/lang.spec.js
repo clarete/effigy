@@ -2,8 +2,8 @@ const { parse, translate } = require('../lang');
 
 describe("Translate", () => {
   describe("Expression", () => {
-    describe("FunCall", () => {
-      it("should work with no parameters", () => {
+    describe("Call", () => {
+      it("with no parameters", () => {
         const tree = parse("print()");
         const code = translate(tree);
 
@@ -19,7 +19,7 @@ describe("Translate", () => {
         });
       });
 
-      it("should work with one number parameter", () => {
+      it("with one number parameter", () => {
         const tree = parse("print(42)");
         const code = translate(tree);
 
@@ -36,7 +36,7 @@ describe("Translate", () => {
         });
       });
 
-      it("should work with two number parameter", () => {
+      it("with two number parameter", () => {
         const tree = parse("print(42, 43)");
         const code = translate(tree);
 
@@ -148,8 +148,8 @@ describe("Translate", () => {
       });
     });                         // BinOp
 
-    describe("FunDef", () => {
-      it("should have anonymous function", () => {
+    describe("Lambda", () => {
+      it("with single expression on the body", () => {
         const tree = parse('fn() 1');
         const code = translate(tree);
 

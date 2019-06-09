@@ -12,7 +12,7 @@ Assignment <- { "Assignment" { Expression StoreName } }
 Expression <- { "Expression" Unary }
             / { "Expression" Primary }
             / { "Expression" BinOp }
-            / { "Expression" LambdaDef }
+            / { "Expression" Lambda }
             / BinOp
 
 BinOp      <- { "BinOp" { BINOP Primary Primary } }
@@ -27,21 +27,22 @@ Unary      <- { "Unary" Primary }
 UNOP       <- '-' / '+'
 
 Primary    <- Value
-            / FunCall
-            / LambdaDef
+            / Call
+            / Lambda
             / Identifier
             / Expression
 
-LambdaDef  <- { "LambdaDef" { DefParams Code } }
-DefParams  <- { "DefParams" Atom } # Null/No Parameters
+Lambda     <- { "Lambda" { Params Code } }
+Params     <- { "Params" Atom }       # No Parameters
+
+Param      <- { "Param" Identifier }
+
+Call       <- { "Call" { Identifier CallParams } }  # One or more parameters
+            / { "Call" Identifier }                 # No parameters
+
+CallParams <- { Expression* } / Expression
 
 Value      <- { "Value" Number }
-
-FunCall    <- { "FunCall" { Identifier FunParams } }  # One or more parameters
-            / { "FunCall" Identifier }                # No parameters
-
-FunParams  <- { Expression* }
-            / Expression
 
 Number     <- { "Number" Atom }
 Identifier <- { "Identifier" Atom  }
