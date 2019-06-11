@@ -19,6 +19,7 @@ Attribute  <- { "Attribute" { Identifier (LoadAttr / MethodCall)+ } }
 LoadAttr   <- { "LoadAttr" Atom }
 LoadMethod <- { "LoadMethod" Atom }
 MethodCall <- { "MethodCall" LoadMethod }
+            / { "MethodCall" { LoadMethod Primary+ } }
 
 Primary    <- Value
             / Call

@@ -197,6 +197,43 @@ describe("Translate", () => {
           ],
         });
       });
+
+      it("should provide method calling", () => {
+        const tree = parse('print.__doc__.__str__()');
+        const code = translate(tree);
+
+        expect(code).toEqual({
+          constants: [null],
+          names: ['print', '__doc__', '__str__'],
+          instructions: [
+            ['load-name', 0],
+            ['load-attr', 1],
+            ['load-method', 2],
+            ['call-method', 0],
+            ['load-const', 0],
+            ['return-value'],
+          ],
+        });
+      });
+
+      it("should provide method calling with parameters", () => {
+        const tree = parse('object.__doc__.zfill(20)');
+        const code = translate(tree);
+
+        expect(code).toEqual({
+          constants: [20, null],
+          names: ['object', '__doc__', 'zfill'],
+          instructions: [
+            ['load-name', 0],
+            ['load-attr', 1],
+            ['load-method', 2],
+            ['load-const', 0],
+            ['call-method', 1],
+            ['load-const', 1],
+            ['return-value'],
+          ],
+        });
+      });
     });                         // BinOp
 
     describe("Lambda", () => {

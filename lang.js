@@ -87,7 +87,9 @@ const parserActions = {
     return [n, [head, ...tail.map(x => {
       if (x[0] === 'Identifier') return rename(x, 'LoadAttr');
       if (x[0] === 'Call') {
-        x[1] = rename(x[1], 'LoadMethod');
+        if (multi(x[1]))
+          x[1][0] = rename(x[1][0], "LoadMethod");
+        else x[1] = rename(x[1], 'LoadMethod');
         return rename(x, 'MethodCall');
       }
       return x;
