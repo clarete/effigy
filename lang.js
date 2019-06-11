@@ -45,6 +45,7 @@ const parserActions = {
   BIN: (_, x) => toint(join(x).replace('0b', ''), 2),
   Identifier: (n, x) => [n, join(x)],
   // We'll take their value the way it is
+  Expression: (_, x) => x,
   CallParams: (_, x) => x,
   PLUS: (_, x) => x,
   MINUS: (_, x) => x,
@@ -77,6 +78,21 @@ const parserActions = {
   Term: leftAssoc,
   Factor: rightAssoc,
   Power: rightAssoc,
+  // Attribute Access/method call
+  Attribute: (n, x) => {
+    if (!multi(x)) return [n, x];
+    let head, tail;
+    if (multi(x[1])) { ([head, ...[tail]] = x); }
+    else { ([head, ...tail] = x); }
+    return [n, [head, ...tail.map(x => {
+      if (x[0] === 'Identifier') return rename(x, 'LoadAttr');
+      if (x[0] === 'Call') {
+        x[1] = rename(x[1], 'LoadMethod');
+        return rename(x, 'MethodCall');
+      }
+      return x;
+    })]];
+  },
   // Fix associativity of assignment operator
   Assignment: (n, x) => {
     const [identifier, expression] = x;
@@ -145,9 +161,9 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
     emit('load-const', newc);
     return newc;
   };
-  const loadName = c => {
+  const load = (n, c) => {
     const newn = newName(c);
-    emit('load-name', newn);
+    emit(`load-${n}`, newn);
     return newn;
   };
   const storeName = c => {
@@ -155,17 +171,17 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
     emit('store-name', newn);
     return newn;
   };
-  const funCall = c => {
+  const call = (n, c) => {
     if (peg.consp(c)) {
       const [, args] = c;
       // More than one parameter
       if (peg.consp(args) && peg.consp(args[0]))
-        emit('call-function', args.length);
+        emit(`call-${n}`, args.length);
       // Single Param
-      else emit('call-function', 1);
+      else emit(`call-${n}`, 1);
     } else {
       // No Params
-      emit('call-function', 0);
+      emit(`call-${n}`, 0);
     }
     return c;
   };
@@ -190,11 +206,14 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
   // 3.1. Prepare the translation table
   const actions = {
     Module: (_, x) => module(x),
-    Identifier: (_, x) => loadName(x()[1]),
+    Identifier: (_, x) => load('name', x()[1]),
+    LoadMethod: (_, x) => load('method', x()[1]),
     StoreName: (_, x) => storeName(x()[1]),
-    Call: (_, x) => funCall(x()[1]),
+    Call: (_, x) => call('function', x()[1]),
+    MethodCall: (_, x) => call('method', x()[1]),
     CallParams: (_, x) => x(),
     Number: (_, x) => loadConst(x()[1]),
+    LoadAttr: (_, x) => load('attr', x()[1]),
     Atom: (_, x) => x(),
     BinOp: (_, x) => emit(BIN_OP_MAP[x()[1][0]]),
     Unary: (_, x) => emit(UN_OP_MAP[x()[1][0]]),

@@ -146,6 +146,57 @@ describe("Translate", () => {
           ],
         });
       });
+
+      it("should parse deep attribute access correctly", () => {
+        const tree0 = parse('print.__doc__');
+        expect(tree0).toEqual(
+          ['Module',
+            ['Attribute',
+             [['Identifier', 'print'],
+              ['LoadAttr', '__doc__']]]]);
+        const tree1 = parse('print.__doc__.__str__().__str__');
+        expect(tree1).toEqual(
+          ['Module',
+           ['Attribute',
+            [['Identifier', 'print'],
+             ['LoadAttr', '__doc__'],
+             ['MethodCall', ['LoadMethod', '__str__']],
+             ['LoadAttr', '__str__']]]]);
+      });
+
+      it("should provide attribute access", () => {
+        const tree = parse('print.__doc__');
+        const code = translate(tree);
+
+        expect(code).toEqual({
+          constants: [null],
+          names: ['print', '__doc__'],
+          instructions: [
+            ['load-name', 0],
+            ['load-attr', 1],
+            ['load-const', 0],
+            ['return-value'],
+          ],
+        });
+      });
+
+      it("should provide method calling", () => {
+        const tree = parse('print.__doc__.__str__()');
+        const code = translate(tree);
+
+        expect(code).toEqual({
+          constants: [null],
+          names: ['print', '__doc__', '__str__'],
+          instructions: [
+            ['load-name', 0],
+            ['load-attr', 1],
+            ['load-method', 2],
+            ['call-method', 0],
+            ['load-const', 0],
+            ['return-value'],
+          ],
+        });
+      });
     });                         // BinOp
 
     describe("Lambda", () => {

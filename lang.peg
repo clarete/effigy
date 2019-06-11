@@ -12,7 +12,10 @@ BitShifting     <- Term ((RSHIFT / LSHIFT) Term)*
 Term            <- Factor ((PLUS / MINUS) Factor)*
 Factor          <- Power ((STAR / SLASH) Power)*
 Power           <- Unary ((POWER / MOD) Unary)*
-Unary           <- (PLUS / MINUS)? Primary
+Unary           <- (PLUS / MINUS)? Attribute
+
+Attribute       <- Primary (_DOT (Call / Identifier))*
+
 Primary         <- _PROP Expression _PRCL
                  / Value
                  / Call
@@ -100,6 +103,9 @@ LSHIFT          <- '<<' _
 BAND            <- '&'  _
 BOR             <- '|'  _
 BXOR            <- '^'  _
+
+## Member Access Operators
+_DOT            <- '.' _
 
 # Whitespace Handling
 _               <- (Space / Comment)*

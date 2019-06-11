@@ -6,17 +6,19 @@ Code       <- { "Code" { (Statement / Expression)+ } }
             / { "Code" (Statement / Expression) }
 
 Statement  <- { "Statement" Assignment }
-
 Assignment <- { "Assignment" { Expression StoreName } }
-
-Expression <- { "Expression" Unary }
-            / { "Expression" Primary }
-            / { "Expression" BinOp }
-            / { "Expression" Lambda }
+Expression <- Attribute
+            / Unary
             / BinOp
+            / Lambda
 
 BinOp      <- { "BinOp" { Atom Primary Primary } }
 Unary      <- { "Unary" { Atom Primary } }
+Attribute  <- { "Attribute" { Identifier (LoadAttr / MethodCall)+ } }
+            / { "Attribute" (Primary / Unary) }
+LoadAttr   <- { "LoadAttr" Atom }
+LoadMethod <- { "LoadMethod" Atom }
+MethodCall <- { "MethodCall" LoadMethod }
 
 Primary    <- Value
             / Call
