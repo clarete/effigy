@@ -5,7 +5,7 @@ const zeroOrMore = (combinator) => {
   const output = [];
   while (true) {
     try { output.push(combinator()); }
-    catch (e) { return output; }
+    catch (e) { break; }
   }
   return output;
 };
