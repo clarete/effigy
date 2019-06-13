@@ -80,7 +80,7 @@ const parserActions = {
   Power: rightAssoc,
   // Attribute Access/method call
   Attribute: (n, x) => {
-    if (!multi(x)) return [n, x];
+    if (!multi(x)) return x;
     let head, tail;
     if (multi(x[1])) { ([head, ...[tail]] = x); }
     else { ([head, ...tail] = x); }

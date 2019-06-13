@@ -8,6 +8,7 @@ Code       <- { "Code" { (Statement / Expression)+ } }
 Statement  <- { "Statement" Assignment }
 Assignment <- { "Assignment" { Expression StoreName } }
 Expression <- Attribute
+            / Primary
             / Unary
             / BinOp
             / Lambda
