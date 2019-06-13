@@ -193,7 +193,7 @@ function compiler(co_filename) {
   // Current object
   const curr = () => stack[stack.length-1];
   // Control scope
-  const enter = ({ co_name }) => stack.push(code({ co_name }));
+  const enter = (...args) => stack.push(code(...args));
   const leave = () => {
     const [c, instructions] = stack.pop();
     const instrlist = instructions.map(i => {

@@ -188,7 +188,7 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
     return c;
   };
   const lambdaDef = visit => {
-    enter({ co_name: '<lambda>', co_flags: 43 });
+    enter({ co_name: '<lambda>' });
     let v;
     try { v = visit(); }
     catch (e) { leave(); throw e; }
