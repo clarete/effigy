@@ -376,6 +376,16 @@ const delayedAction = (a, id, th) => {
   return [idKey, th()];
 };
 
+const delayedAction0 = (a, id, th) => {
+  const idKey = Symbol.keyFor(id);
+  if (a) {
+    const ath = a[idKey];
+    if (typeof ath === 'function') {
+      return ath(idKey, th);
+    }
+  }
+  return th();
+};
 
 function pegc(g, a) {
   const { grammar: G, start } = pegt(peg(scan(g)).Grammar());
@@ -462,5 +472,7 @@ module.exports = {
   lst,
   prim,
   consp,
+
   delayedAction,
+  delayedAction0,
 };

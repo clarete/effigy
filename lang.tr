@@ -6,42 +6,47 @@ Code       <- { "Code" { (Statement / Expression)+ } }
             / { "Code" (Statement / Expression) }
 
 Statement  <- { "Statement" Assignment }
-Assignment <- { "Assignment" { Expression StoreName } }
+Assignment <- { "Assignment" { Expression Store } }
 Expression <- Attribute
             / Primary
             / Unary
             / BinOp
-            / Lambda
 
 BinOp      <- { "BinOp" { Atom Primary Primary } }
 Unary      <- { "Unary" { Atom Primary } }
-Attribute  <- { "Attribute" { Identifier (LoadAttr / MethodCall)+ } }
-            / { "Attribute" (Primary / Unary) }
+Attribute  <- { "Attribute" { Load (LoadAttr / MethodCall)+ } }
+            / { "Attribute" Load }
 LoadAttr   <- { "LoadAttr" Atom }
 LoadMethod <- { "LoadMethod" Atom }
 MethodCall <- { "MethodCall" LoadMethod }
             / { "MethodCall" { LoadMethod Primary+ } }
 
+ScopeId    <- { "ScopeId" Atom }
+
 Primary    <- Value
             / Call
             / Lambda
-            / Identifier
+            / Load
             / Expression
 
 Lambda     <- { "Lambda" { Params Code } }
-Params     <- { "Params" Atom }       # No Parameters
+            / { "Lambda" { ScopeId Params Code } }
+Params     <- { "Params" { Param+ } } # Multiple Params
+            / { "Params" Param }      # One Param
+            / { "Params" }            # No Parameters
 
-Param      <- { "Param" Identifier }
+Param      <- { "Param" Atom }
 
-Call       <- { "Call" { Identifier CallParams } }  # One or more parameters
-            / { "Call" Identifier }                 # No parameters
+Call       <- { "Call" { Load CallParams } }  # One or more parameters
+            / { "Call" Load }                 # No parameters
 
 CallParams <- { Expression* } / Expression
 
 Value      <- { "Value" Number }
 
 Number     <- { "Number" Atom }
-Identifier <- { "Identifier" Atom  }
-StoreName  <- { "StoreName" Atom  }
+
+Load       <- { "Load" Atom  }
+Store      <- { "Store" Atom  }
 
 Atom       <- !{ .* } .

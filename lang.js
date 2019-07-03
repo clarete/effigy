@@ -43,7 +43,7 @@ const parserActions = {
   DEC: (_, x) => toint(x, 10),
   HEX: (_, x) => toint(x, 16),
   BIN: (_, x) => toint(join(x).replace('0b', ''), 2),
-  Identifier: (n, x) => [n, join(x)],
+  Identifier: (n, x) => ["Load", join(x)],
   // We'll take their value the way it is
   Expression: (_, x) => x,
   CallParams: (_, x) => x,
@@ -66,6 +66,13 @@ const parserActions = {
   BXOR: (_, x) => x,
   // Not relevant if captured single result
   Primary: lift,
+  Params: (n, x) => {
+    // Don't allow returning [Params, null]
+    if (!multi(x) && x === null) return [n];
+    return [n, x];
+  },
+  // Rename
+  Param: (_, x) => rename(x, 'Param'),
   // Omit unary wrapper if it's not an unary operator
   Unary: (n, x) => {
     if (UN_OP_MAP[x[0]]) return [n, x];
@@ -85,7 +92,7 @@ const parserActions = {
     if (multi(x[1])) { ([head, ...[tail]] = x); }
     else { ([head, ...tail] = x); }
     return [n, [head, ...tail.map(x => {
-      if (x[0] === 'Identifier') return rename(x, 'LoadAttr');
+      if (x[0] === 'Load') return rename(x, 'LoadAttr');
       if (x[0] === 'Call') {
         if (multi(x[1]))
           x[1][0] = rename(x[1][0], "LoadMethod");
@@ -98,7 +105,7 @@ const parserActions = {
   // Fix associativity of assignment operator
   Assignment: (n, x) => {
     const [identifier, expression] = x;
-    return [n, [expression, rename(identifier, "StoreName")]];
+    return [n, [expression, rename(identifier, "Store")]];
   },
 };
 
@@ -116,22 +123,33 @@ const addToTable = (t, i) => {
 
 function dummyCompiler() {
   // Code object shape
-  const code = () => ({ constants: [], names: [], instructions: [] });
+  const code = () => ({
+    constants: [],
+    names: [],
+    varnames: [],
+    freevars: [],
+    instructions: [],
+  });
   // Support for nested functions
   const stack = [];
   // Current object
   const curr = () => stack[stack.length-1];
+  const attr = name => curr()[name];
   // Control scope
   const enter = () => stack.push(code());
   const leave = () => stack.pop();
   // -- Mutator for instructions
-  const emit = (op, arg) =>
-    curr().instructions.push(arg !== undefined ? [op, arg] : [op]);
-  // -- Mutators for adding new items to tables
-  const newConst = c => addToTable(curr().constants, c);
-  const newName = c => addToTable(curr().names, c);
+  const emit = (op, arg) => curr()
+    .instructions
+    .push(arg !== undefined ? [op, arg] : [op]);
+  // -- WAT
+  const backtrack = (f) => {
+    const copy = curr().instructions.slice();
+    try { return f(); }
+    catch (e) { curr().instructions = copy; throw e; }
+  };
   // -- Basic interface for compiler
-  return { emit, newConst, newName, enter, leave };
+  return { enter, leave, emit, attr, backtrack };
 }
 
 const UN_OP_MAP = {
@@ -154,18 +172,133 @@ const BIN_OP_MAP = {
    '^': 'binary-xor',
 };
 
-function translate(parseTree, flags=0, compiler=dummyCompiler()) {
+function translateScope(tree, trGrammar) {
+  if (!trGrammar)               // for tests
+    trGrammar = fs.readFileSync(path.resolve('lang.tr')).toString();
+
+  let i = 0;
+  const map = [];
+  const symstk = [];
+  const newsymtable = ({ node }) => ({
+    node,
+    // Bookkeeping
+    uses: [], defs: [], children: [],
+    // Results
+    fast: [], cell: [], free: [], deref: [], globals: [],
+  });
+
+  const currstk = () => symstk[symstk.length-1];
+  const entersym = node => symstk.push(newsymtable({ node }));
+  const leavesym = () => symstk.pop();
+
+  const symActions = {
+    Atom: (_, x) => x(),
+    Param: (_, x) => {
+      const v0 = x();
+      const v = v0[1];
+      addToTable(currstk().defs, v);
+      addToTable(currstk().fast, v);
+      return v0;
+    },
+    Store: (_, x) => {
+      const value = x();
+      addToTable(currstk().defs, value[1]);
+      return value;
+    },
+    Load: (_, x) =>  {
+      const value = x();
+      addToTable(currstk().uses, value[1]);
+      return value;
+    },
+    Lambda: (_, x) => {
+      entersym('lambda');
+      let v;
+      try { v = x(); }
+      catch (e) { leavesym(); throw e; }
+      const s = leavesym();
+      currstk().children.push(s);
+      map[i++] = s;
+      v[1].unshift(["ScopeId", i-1]);
+      return v;
+      // return rename(v, "ScopeLambda");
+    },
+    Attribute: (n, x) => {
+      const v = x();
+      if (!multi(v[1][1])) return [n, v[1]];
+      const newl = v[1][1];
+      newl.unshift(v[1][0]);
+      return [n, newl];
+    },
+  };
+
+  map[i++] = null;
+  entersym('module');
+  const outTree = peg.pegc(trGrammar, symActions).matchl(tree, peg.delayedAction0);
+  const scope = map[0] = leavesym();
+
+  const intersection = (a, b) => a.filter(x => b.indexOf(x) >= 0);
+  let root = null;
+  const analyze = (node, parentDefs=[]) => {
+    if (!root) { root = node; root.globals = []; }
+    else { node.globals = root.defs.filter(x => parentDefs.indexOf(x) === -1); }
+    // Go down children nodes
+    const allFree = [];
+    node.children.map(n => analyze(n, parentDefs.concat(n.fast)));
+    node.children.map(n => allFree.concat(n.free));
+    const allUses = allFree.concat(node.uses);
+    // collect info post traverse
+    node.cell = intersection(allFree, node.fast);
+    node.free = intersection(allUses, parentDefs.filter(x => node.fast.indexOf(x) === -1));
+    node.deref = node.cell.concat(node.free);
+  };
+  analyze(scope);
+
+  const tonat = t => {
+    if (!Array.isArray(t)) return t;
+    return Array.from(t).map(tonat);
+  };
+  return [map, tonat(outTree)];
+}
+
+function translate(tree, flags=0, compiler=dummyCompiler()) {
   // 3. Traverse the parse tree and emit code
-  const { enter, leave, emit, newConst, newName } = compiler;
-  // Emitters
+  const trGrammar = fs.readFileSync(path.resolve('lang.tr')).toString();
+  // 3.1. Traverse tree once to build the scope
+  const [symtable, scopedTree] = translateScope(tree, trGrammar);
+  // 3.2. Translation Actions
+  const { enter, leave, backtrack, attr, emit } = compiler;
+  // -- Mutators for adding new items to tables
+  const newConst = c => addToTable(attr('constants'), c);
+  const newName = c => addToTable(attr('names'), c);
+  const newVarName = c => addToTable(attr('varnames'), c);
+
   const loadConst = c => {
     const newc = newConst(c);
     emit('load-const', newc);
     return newc;
   };
-  const load = (n, c) => {
+
+  const load = c => {
+    const scope = getscope();
+    if (scope.deref.indexOf(c) !== -1) {
+      addToTable(attr('freevars'), c);
+      emit(`load-deref`, scope.deref.indexOf(c));
+    } else if (scope.fast.indexOf(c) !== -1) {
+      emit('load-fast', newVarName(c));
+    } else if (scope.globals.indexOf(c) !== -1) {
+      emit('load-global', newName(c));
+    } else
+      emit('load-name', newName(c));
+    return true;
+  };
+  const loadAttr = (c) => {
     const newn = newName(c);
-    emit(`load-${n}`, newn);
+    emit(`load-attr`, newn);
+    return newn;
+  };
+  const loadMethod = c => {
+    const newn = newName(c);
+    emit(`load-method`, newn);
     return newn;
   };
   const storeName = c => {
@@ -173,6 +306,7 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
     emit('store-name', newn);
     return newn;
   };
+
   const call = (n, c) => {
     if (peg.consp(c)) {
       const [, args] = c;
@@ -187,11 +321,27 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
     }
     return c;
   };
+
+  const scopes = [symtable[0]];
+  const pushscope = s => {
+    if (!symtable[s]) throw new Error('No such scope id', s);
+    return scopes.push(symtable[s]);
+  };
+  const getscope = () => scopes[scopes.length-1];
+  const popscope = () => scopes.pop();
+
+  const scopeId = (visit) => {
+    const value = visit();
+    pushscope(value[1]);
+    return value;
+  };
+
   const lambdaDef = visit => {
     enter({ co_name: '<lambda>' });
     let v;
     try { v = visit(); }
     catch (e) { leave(); throw e; }
+    popscope();
     emit('return-value');
     loadConst(leave());
     loadConst('<lambda>');
@@ -205,27 +355,29 @@ function translate(parseTree, flags=0, compiler=dummyCompiler()) {
     emit('return-value');
     return leave();
   };
-  // 3.1. Prepare the translation table
   const actions = {
     Module: (_, x) => module(x),
-    Identifier: (_, x) => load('name', x()[1]),
-    LoadMethod: (_, x) => load('method', x()[1]),
-    StoreName: (_, x) => storeName(x()[1]),
+    Expression: (n, x) => [n, backtrack(x)],
+    // Scope: (_, x, s) => scope(x, s),
+    ScopeId: (_, x, s) => scopeId(x, s),
+    Param: (_, x) => newVarName(x()[1]),
+    Load: (_, x) => load(x()[1]),
+    LoadMethod: (_, x) => loadMethod(x()[1]),
+    Store: (_, x) => storeName(x()[1]),
     Call: (_, x) => call('function', x()[1]),
     MethodCall: (_, x) => call('method', x()[1]),
     CallParams: (_, x) => x(),
+    Lambda: (_, x, s) => lambdaDef(x, s),
     Number: (_, x) => loadConst(x()[1]),
-    LoadAttr: (_, x) => load('attr', x()[1]),
+    LoadAttr: (_, x) => loadAttr(x()[1]),
     Atom: (_, x) => x(),
     BinOp: (_, x) => emit(BIN_OP_MAP[x()[1][0]]),
     Unary: (_, x) => emit(UN_OP_MAP[x()[1][0]]),
-    Primary: (_, x) => x()[1],
+    Primary: (_, x) => x()[1], // backtrack(() => x()[1]),
     Value: (_, x) => x()[1],
-    Lambda: (_, x) => lambdaDef(x),
   };
   // 3.2. Traverse parse tree with transformation grammar
-  const trGrammar = fs.readFileSync(path.resolve('lang.tr')).toString();
-  return peg.pegc(trGrammar, actions).matchl(parseTree, peg.delayedAction);
+  return peg.pegc(trGrammar, actions).matchl(scopedTree, peg.delayedAction0);
 }
 
 function translateFile(filename) {
@@ -265,5 +417,6 @@ function translateFile(filename) {
 module.exports = {
   parse,
   translate,
+  translateScope,
   translateFile,
 };
