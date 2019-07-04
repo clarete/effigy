@@ -219,9 +219,9 @@ function translateScope(tree, trGrammar) {
       map[i++] = s;
       v[1].unshift(["ScopeId", i-1]);
       return v;
-      // return rename(v, "ScopeLambda");
     },
     Attribute: (n, x) => {
+      // Flatten output of + operator :/
       const v = x();
       if (!multi(v[1][1])) return [n, v[1]];
       const newl = v[1][1];

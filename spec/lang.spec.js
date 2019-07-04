@@ -313,8 +313,12 @@ describe("Translate", () => {
       });
     });
 
-    describe('Closures', () => {
-      it("should gen globals", () => {
+    describe('Nested Scopes', () => {
+      it("should use global if no enclosing scope redefines name", () => {
+        // `a' is defined in the module scope and used in the function
+        // scope, so when it's used within a nested scope, it's
+        // accessed via `load-global' which takes an index within the
+        // `names' tuple.
         const tree = parse(`a = 1; f = fn(p) p+a+1; f(1) # 2\n`);
         const code = translate(tree);
 
