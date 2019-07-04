@@ -197,7 +197,6 @@ function translateScope(tree, trGrammar) {
       const v0 = x();
       const v = v0[1];
       addToTable(currstk().defs, v);
-      addToTable(currstk().fast, v);
       return v0;
     },
     Store: (_, x) => {
@@ -243,6 +242,7 @@ function translateScope(tree, trGrammar) {
     else { node.globals = root.defs.filter(x => parentDefs.indexOf(x) === -1); }
     // Go down children nodes
     const allFree = [];
+    node.fast = node.node === 'lambda' ? node.defs : [];
     node.children.map(n => analyze(n, parentDefs.concat(n.fast)));
     node.children.map(n => allFree.concat(n.free));
     const allUses = allFree.concat(node.uses);
@@ -291,6 +291,15 @@ function translate(tree, flags=0, compiler=dummyCompiler()) {
       emit('load-name', newName(c));
     return true;
   };
+  const store = c => {
+    const scope = getscope();
+    if (scope.fast.indexOf(c) !== -1)
+      emit('store-fast', newVarName(c));
+    else
+      emit('store-name', newName(c));
+    return true;
+  };
+
   const loadAttr = (c) => {
     const newn = newName(c);
     emit(`load-attr`, newn);
@@ -363,7 +372,7 @@ function translate(tree, flags=0, compiler=dummyCompiler()) {
     Param: (_, x) => newVarName(x()[1]),
     Load: (_, x) => load(x()[1]),
     LoadMethod: (_, x) => loadMethod(x()[1]),
-    Store: (_, x) => storeName(x()[1]),
+    Store: (_, x) => store(x()[1]),
     Call: (_, x) => call('function', x()[1]),
     MethodCall: (_, x) => call('method', x()[1]),
     CallParams: (_, x) => x(),

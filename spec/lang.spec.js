@@ -354,6 +354,39 @@ describe("Translate", () => {
         });
       });
 
+      it("should use store-fast for local names and arguments", () => {
+        // `a' is defined and used locally only, so it should be
+        // stored within the local scope array
+        const tree = parse(`fn(p) { a = p+1; a }`);
+        const code = translate(tree);
+        expect(code).toEqual({
+          constants: [{
+            constants: [1],
+            names: [],
+            varnames: ['p', 'a'],
+            freevars: [],
+            instructions: [
+              [ 'load-const', 0 ],
+              [ 'load-fast', 0 ],
+              [ 'binary-add' ],
+              [ 'store-fast', 1 ],
+              [ 'load-fast', 1 ],
+              [ 'return-value' ],
+            ],
+          }, '<lambda>', null ],
+          names: [],
+          varnames: [],
+          freevars: [],
+          instructions: [
+            [ 'load-const', 0 ],
+            [ 'load-const', 1 ],
+            [ 'make-function' ],
+            [ 'load-const', 2 ],
+            [ 'return-value' ],
+          ],
+        });
+      });
+
       it("with single parameter", () => {
         const tree = parse(`
 f = fn(p) {
