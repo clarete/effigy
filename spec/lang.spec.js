@@ -37,6 +37,7 @@ describe("Translate", () => {
           names: ['print'],
           varnames: [],
           freevars: [],
+          cellvars: [],
           instructions: [
             ['load-name', 0],
             ['call-function', 0],
@@ -55,6 +56,7 @@ describe("Translate", () => {
           names: ['print'],
           varnames: [],
           freevars: [],
+          cellvars: [],
           instructions: [
             ['load-name', 0],
             ['load-const', 0],
@@ -74,6 +76,7 @@ describe("Translate", () => {
           names: ['print'],
           varnames: [],
           freevars: [],
+          cellvars: [],
           instructions: [
             ['load-name', 0],
             ['load-const', 0],
@@ -94,6 +97,7 @@ describe("Translate", () => {
           names: ['print'],
           varnames: [],
           freevars: [],
+          cellvars: [],
           instructions: [
             ['load-name', 0],
             ['load-const', 0],
@@ -118,6 +122,7 @@ describe("Translate", () => {
           names: ['a'],
           varnames: [],
           freevars: [],
+          cellvars: [],
           instructions: [
             ['load-name', 0],
             ['unary-negative'],
@@ -138,6 +143,7 @@ describe("Translate", () => {
           names: [],
           varnames: [],
           freevars: [],
+          cellvars: [],
           instructions: [
             ['load-const', 0],
             ['load-const', 1],
@@ -158,6 +164,7 @@ describe("Translate", () => {
           names: ['print'],
           varnames: [],
           freevars: [],
+          cellvars: [],
           instructions: [
             ['load-name', 0],
             ['load-const', 0],
@@ -178,6 +185,7 @@ describe("Translate", () => {
           names: [],
           varnames: [],
           freevars: [],
+          cellvars: [],
           instructions: [
             ['load-const', 0],
             ['load-const', 1],
@@ -233,6 +241,7 @@ describe("Translate", () => {
           names: ['print', '__doc__'],
           varnames: [],
           freevars: [],
+          cellvars: [],
           instructions: [
             ['load-name', 0],
             ['load-attr', 1],
@@ -251,6 +260,7 @@ describe("Translate", () => {
           names: ['print', '__doc__', '__str__'],
           varnames: [],
           freevars: [],
+          cellvars: [],
           instructions: [
             ['load-name', 0],
             ['load-attr', 1],
@@ -271,6 +281,7 @@ describe("Translate", () => {
           names: ['object', '__doc__', 'zfill'],
           varnames: [],
           freevars: [],
+          cellvars: [],
           instructions: [
             ['load-name', 0],
             ['load-attr', 1],
@@ -294,6 +305,7 @@ describe("Translate", () => {
             names: [],
             varnames: [],
             freevars: [],
+            cellvars: [],
             instructions: [
               ['load-const', 0],
               ['return-value'],
@@ -302,6 +314,7 @@ describe("Translate", () => {
           names: [],
           varnames: [],
           freevars: [],
+          cellvars: [],
           instructions: [
             ['load-const', 0],
             ['load-const', 1],
@@ -323,23 +336,30 @@ describe("Translate", () => {
         const code = translate(tree);
 
         expect(code).toEqual({
-          constants: [1, {
-            constants: [1],
-            names: ['a'],
-            varnames: ['p'],
-            freevars: [],
-            instructions: [
-              ['load-const', 0],
-              ['load-global', 0],
-              ['load-fast', 0],
-              ['binary-add'],
-              ['binary-add'],
-              ['return-value'],
-            ],
-          }, '<lambda>', null],
+          constants: [
+            1,
+            {
+              constants: [1],
+              names: ['a'],
+              varnames: ['p'],
+              freevars: [],
+              cellvars: [],
+              instructions: [
+                ['load-const', 0],
+                ['load-global', 0],
+                ['load-fast', 0],
+                ['binary-add'],
+                ['binary-add'],
+                ['return-value'],
+              ],
+            },
+            '<lambda>',
+            null,
+          ],
           names: ['a', 'f'],
           varnames: [],
           freevars: [],
+          cellvars: [],
           instructions: [
             ['load-const', 0],  // 1
             ['store-name', 0],  // a
@@ -369,6 +389,7 @@ describe("Translate", () => {
             names: [],
             varnames: ['p', 'a'],
             freevars: [],
+            cellvars: [],
             instructions: [
               [ 'load-const', 0 ],
               [ 'load-fast', 0 ],
@@ -381,6 +402,7 @@ describe("Translate", () => {
           names: [],
           varnames: [],
           freevars: [],
+          cellvars: [],
           instructions: [
             [ 'load-const', 0 ],
             [ 'load-const', 1 ],
@@ -401,21 +423,80 @@ f = fn(p) {
 print(f(1))      # 9
 `);
         const code = translate(tree);
-        return;
+        console.log(code);
 
         expect(code).toEqual({
-          constants: [null],
+          constants: [
+            {
+              constants: [
+                {
+                  constants: [],
+                  names: [],
+                  varnames: ['y'],
+                  freevars: ['p'],
+                  cellvars: [],
+                  instructions: [
+                    ['load-fast', 0],  // y
+                    ['load-deref', 0], // p
+                    ['binary-add'],
+                    ['return-value'],
+                  ],
+                },
+                '<lambda>',
+                2,
+                1,
+              ],
+              names: [],
+              varnames: ['p', 'x'],
+              freevars: [],
+              cellvars: ['p'],
+              instructions: [
+                ['load-closure', 0],
+                ['build-tuple', 1],
+                ['load-const', 0],  // code for lambda stored in x
+                ['load-const', 1],  // 'lambda'
+                ['make-function', 8],
+                ['store-fast', 1],  // save above lambda into local `x'
+
+                ['load-const', 3],  // 2
+                ['load-deref', 0],  // `p' from above scope
+                ['binary-add'],
+                ['store-deref', 0], // `p'
+
+                ['load-fast', 1],   // `x'
+                ['load-const', 2],  // 2
+                ['call-function', 1],
+                ['load-deref', 0],  // `p'
+                ['binary-add'],
+                ['load-const', 3],  // 1
+                ['binary-add'],
+                ['return-value'],
+              ],
+            },
+            '<lambda>',
+            1,
+            null,
+          ],
           names: ['f', 'print'],
           varnames: [],
           freevars: [],
+          cellvars: [],
           instructions: [
-            ['load-name', 0],
-            ['call-function', 0],
-            ['load-const', 0],
+            ['load-const', 0],    // Code object to be stored in 'f'
+            ['load-const', 1],    // 'lambda'
+            ['make-function', 0],
+            ['store-name', 0],    // 'f'
+
+            ['load-name', 1],     // 'print'
+            ['load-name', 0],     // 'f'
+            ['load-const', 2],    // 1
+            ['call-function', 1], // 'f'
+            ['call-function', 1], // 'print'
+
+            ['load-const', 3],
             ['return-value'],
           ],
         });
-
       });
     });                         // Scopes
   });                           // Expression
@@ -431,6 +512,7 @@ print(f(1))      # 9
           names: ['a', 'print'],
           varnames: [],
           freevars: [],
+          cellvars: [],
           instructions: [
             ['load-const', 0],
             ['store-name', 0],

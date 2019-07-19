@@ -4,7 +4,6 @@ const path = require('path');
 const peg = require('./peg');
 const py37 = require('./arch/py37');
 
-
 // Operator Associativity
 const leftAssocOps = [
   '+', '-', '==', '!=', '>=', '<=', '>', '<',
@@ -128,6 +127,7 @@ function dummyCompiler() {
     names: [],
     varnames: [],
     freevars: [],
+    cellvars: [],
     instructions: [],
   });
   // Support for nested functions
@@ -234,25 +234,31 @@ function translateScope(tree, trGrammar) {
   entersym('module');
   const outTree = peg.pegc(trGrammar, symActions).matchl(tree, peg.delayedAction0);
   const scope = map[0] = leavesym();
-
-  const intersection = (a, b) => a.filter(x => b.indexOf(x) >= 0);
+  // The following code evolved from the algorithm in the Tailbiter
+  // article from Darius Bacon [0] with added the root variable to
+  // bookkeep globals
+  //
+  // [0] https://codewords.recurse.com/issues/seven/dragon-taming-with-tailbiter-a-bytecode-compiler#we-collate-the-variables-and-sub-scopes
+  const intersection = (a, b) => a.filter(x => b.includes(x));
+  const difference = (a, b) => a.filter(x => !b.includes(x));
   let root = null;
   const analyze = (node, parentDefs=[]) => {
     if (!root) { root = node; root.globals = []; }
-    else { node.globals = root.defs.filter(x => parentDefs.indexOf(x) === -1); }
-    // Go down children nodes
-    const allFree = [];
+    else { node.globals = root.defs.filter(x => !parentDefs.includes(x)); }
     node.fast = node.node === 'lambda' ? node.defs : [];
-    node.children.map(n => analyze(n, parentDefs.concat(n.fast)));
-    node.children.map(n => allFree.concat(n.free));
-    const allUses = allFree.concat(node.uses);
+    // Go down children nodes
+    node.children.map(n => analyze(n, parentDefs.concat(node.defs)));
+    // Read direct children's free vars
+    const childUses = node.children.map(n => n.free).flat();
+    const allUses = childUses.concat(node.uses);
     // collect info post traverse
-    node.cell = intersection(allFree, node.fast);
-    node.free = intersection(allUses, parentDefs.filter(x => node.fast.indexOf(x) === -1));
+    node.cell = intersection(childUses, node.defs);
+    node.free = intersection(allUses, difference(parentDefs, node.defs));
     node.deref = node.cell.concat(node.free);
   };
   analyze(scope);
 
+  // Get rid of `List' instances so I can read the output better
   const tonat = t => {
     if (!Array.isArray(t)) return t;
     return Array.from(t).map(tonat);
@@ -271,21 +277,24 @@ function translate(tree, flags=0, compiler=dummyCompiler()) {
   const newConst = c => addToTable(attr('constants'), c);
   const newName = c => addToTable(attr('names'), c);
   const newVarName = c => addToTable(attr('varnames'), c);
-
+  // -- Scope state management
+  const scopes = [symtable[0]];
+  const pushscope = s => scopes.push(symtable[s]);
+  const getscope = () => scopes[scopes.length-1];
+  const popscope = () => scopes.pop();
+  // -- Emit instructions for accessing variables
   const loadConst = c => {
     const newc = newConst(c);
     emit('load-const', newc);
     return newc;
   };
-
   const load = c => {
     const scope = getscope();
-    if (scope.deref.indexOf(c) !== -1) {
-      addToTable(attr('freevars'), c);
+    if (scope.deref.includes(c)) {
       emit(`load-deref`, scope.deref.indexOf(c));
-    } else if (scope.fast.indexOf(c) !== -1) {
+    } else if (scope.fast.includes(c)) {
       emit('load-fast', newVarName(c));
-    } else if (scope.globals.indexOf(c) !== -1) {
+    } else if (scope.globals.includes(c)) {
       emit('load-global', newName(c));
     } else
       emit('load-name', newName(c));
@@ -293,13 +302,14 @@ function translate(tree, flags=0, compiler=dummyCompiler()) {
   };
   const store = c => {
     const scope = getscope();
-    if (scope.fast.indexOf(c) !== -1)
+    if (scope.deref.includes(c))
+      emit(`store-deref`, scope.deref.indexOf(c));
+    else if (scope.fast.includes(c))
       emit('store-fast', newVarName(c));
     else
       emit('store-name', newName(c));
     return true;
   };
-
   const loadAttr = (c) => {
     const newn = newName(c);
     emit(`load-attr`, newn);
@@ -315,7 +325,7 @@ function translate(tree, flags=0, compiler=dummyCompiler()) {
     emit('store-name', newn);
     return newn;
   };
-
+  // -- Emit instructions for more involved operations
   const call = (n, c) => {
     if (peg.consp(c)) {
       const [, args] = c;
@@ -330,31 +340,33 @@ function translate(tree, flags=0, compiler=dummyCompiler()) {
     }
     return c;
   };
-
-  const scopes = [symtable[0]];
-  const pushscope = s => {
-    if (!symtable[s]) throw new Error('No such scope id', s);
-    return scopes.push(symtable[s]);
-  };
-  const getscope = () => scopes[scopes.length-1];
-  const popscope = () => scopes.pop();
-
   const scopeId = (visit) => {
     const value = visit();
     pushscope(value[1]);
     return value;
   };
-
   const lambdaDef = visit => {
     enter({ co_name: '<lambda>' });
     let v;
     try { v = visit(); }
     catch (e) { leave(); throw e; }
-    popscope();
+    // Need to acquire the scope & update tables before popping the
+    // current code object
+    const scope = getscope();
+    scope.free.forEach(x => addToTable(attr('freevars'), x));
+    scope.cell.forEach(x => addToTable(attr('cellvars'), x));
     emit('return-value');
-    loadConst(leave());
+    const code = leave();
+    popscope();
+
+    const flags = 0;
+    if (scope.free.length > 0) {
+      scope.free.map(v => emit('load-closure', scope.deref.indexOf(v)));
+      emit('build-tuple', scope.free.length);
+    }
+    loadConst(code);
     loadConst('<lambda>');
-    emit('make-function');
+    emit('make-function', flags);
     return v;
   };
   const module = visit => {
@@ -382,7 +394,7 @@ function translate(tree, flags=0, compiler=dummyCompiler()) {
     Atom: (_, x) => x(),
     BinOp: (_, x) => emit(BIN_OP_MAP[x()[1][0]]),
     Unary: (_, x) => emit(UN_OP_MAP[x()[1][0]]),
-    Primary: (_, x) => x()[1], // backtrack(() => x()[1]),
+    Primary: (_, x) => x()[1],
     Value: (_, x) => x()[1],
   };
   // 3.2. Traverse parse tree with transformation grammar
