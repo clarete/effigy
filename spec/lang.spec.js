@@ -17,6 +17,7 @@ describe("Scope", () => {
       node: 'module',
       uses: ['f'],
       defs: ['a', 'f'],
+      _g: ['a', 'f'],
       children: [subScope],
       globals: [],
       cell: [], free: [], deref: [], fast: [],
@@ -318,7 +319,7 @@ describe("Translate", () => {
           instructions: [
             ['load-const', 0],
             ['load-const', 1],
-            ['make-function'],
+            ['make-function', 0],
             ['load-const', 2],
             ['return-value'],
           ],
@@ -365,7 +366,7 @@ describe("Translate", () => {
             ['store-name', 0],  // a
             ['load-const', 1],  // <lambda>
             ['load-const', 2],  // 'lambda'
-            ['make-function'],
+            ['make-function', 0],
             ['store-name', 1],  // f
 
             // statement 3
@@ -383,6 +384,7 @@ describe("Translate", () => {
         // stored within the local scope array
         const tree = parse(`fn(p) { a = p+1; a }`);
         const code = translate(tree);
+
         expect(code).toEqual({
           constants: [{
             constants: [1],
@@ -406,7 +408,7 @@ describe("Translate", () => {
           instructions: [
             [ 'load-const', 0 ],
             [ 'load-const', 1 ],
-            [ 'make-function' ],
+            [ 'make-function', 0],
             [ 'load-const', 2 ],
             [ 'return-value' ],
           ],

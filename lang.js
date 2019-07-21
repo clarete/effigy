@@ -235,7 +235,7 @@ function translateScope(tree, trGrammar) {
   const outTree = peg.pegc(trGrammar, symActions).matchl(tree, peg.delayedAction0);
   const scope = map[0] = leavesym();
   // The following code evolved from the algorithm in the Tailbiter
-  // article from Darius Bacon [0] with added the root variable to
+  // article from Darius Bacon [0] with the root variable added to
   // bookkeep globals
   //
   // [0] https://codewords.recurse.com/issues/seven/dragon-taming-with-tailbiter-a-bytecode-compiler#we-collate-the-variables-and-sub-scopes
@@ -243,18 +243,25 @@ function translateScope(tree, trGrammar) {
   const difference = (a, b) => a.filter(x => !b.includes(x));
   let root = null;
   const analyze = (node, parentDefs=[]) => {
-    if (!root) { root = node; root.globals = []; }
-    else { node.globals = root.defs.filter(x => !parentDefs.includes(x)); }
-    node.fast = node.node === 'lambda' ? node.defs : [];
+    // Initialize list of globals
+    if (!root) { root = node; root._g = root.defs.slice(); }
+    const isModule = node.node === 'module';
+    // Local vars, not a thing for modules
+    node.fast = !isModule ? node.defs : [];
+    // What to pass when analyzing children
+    parentDefs = !isModule ? parentDefs.concat(node.defs) : [];
     // Go down children nodes
-    node.children.map(n => analyze(n, parentDefs.concat(node.defs)));
+    node.children.map(n => analyze(n, parentDefs));
+    // Update list of globals available to that node
+    const _g = difference(root._g, node.fast);
+    if (!isModule) node.globals = difference(_g, parentDefs);
     // Read direct children's free vars
     const childUses = node.children.map(n => n.free).flat();
     const allUses = childUses.concat(node.uses);
     // collect info post traverse
     node.cell = intersection(childUses, node.defs);
-    node.free = intersection(allUses, difference(parentDefs, node.defs));
-    node.deref = node.cell.concat(node.free);
+    node.free = difference(intersection(allUses, difference(parentDefs, node.defs)), node.globals);
+    node.deref = difference(node.cell.concat(node.free), node.globals);
   };
   analyze(scope);
 
@@ -360,7 +367,8 @@ function translate(tree, flags=0, compiler=dummyCompiler()) {
     popscope();
 
     const flags = 0;
-    if (scope.free.length > 0) {
+    const isModule = getscope().node === 'module';
+    if (scope.free.length > 0 && !isModule) {
       scope.free.map(v => emit('load-closure', scope.deref.indexOf(v)));
       emit('build-tuple', scope.free.length);
     }
