@@ -362,7 +362,7 @@ function translate(tree, flags=0, compiler=dummyCompiler()) {
     const scope = getscope();
     scope.free.forEach(x => addToTable(attr('freevars'), x));
     scope.cell.forEach(x => addToTable(attr('cellvars'), x));
-    // Update code parameters
+    // Update argument count
     const params = v[1][1];
     attr('argcount', peg.consp(params[1])
       ? params[1].length
@@ -370,8 +370,10 @@ function translate(tree, flags=0, compiler=dummyCompiler()) {
     emit('return-value');
     const code = leave();
     popscope();
-
-    const flags = 0;
+    // Update flag if it's a closure
+    let flags = 0;
+    if (scope.free.length > 0) flags |= 0x08;
+    // Generate tuple of closure values
     const isModule = getscope().node === 'module';
     if (scope.free.length > 0 && !isModule) {
       scope.free.map(v => emit('load-closure', scope.deref.indexOf(v)));
