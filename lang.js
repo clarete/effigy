@@ -362,6 +362,11 @@ function translate(tree, flags=0, compiler=dummyCompiler()) {
     const scope = getscope();
     scope.free.forEach(x => addToTable(attr('freevars'), x));
     scope.cell.forEach(x => addToTable(attr('cellvars'), x));
+    // Update code parameters
+    const params = v[1][1];
+    attr('argcount', peg.consp(params[1])
+      ? params[1].length
+      : params.length - 1);
     emit('return-value');
     const code = leave();
     popscope();

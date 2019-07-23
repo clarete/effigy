@@ -192,11 +192,18 @@ function compiler(co_filename) {
   const stack = [];
   // Current object
   const curr = () => stack[stack.length-1];
-  const attr = name => name === 'instructions'
+  const get = name => name === 'instructions'
     ? curr()[1]
     : name === 'constants'
     ? curr()[0][`co_consts`]
     : curr()[0][`co_${name}`];
+  const set = (name, value) => name === 'instructions'
+    ? (curr()[1] = value)
+    : name === 'constants'
+    ? (curr()[0][`co_consts`] = value)
+    : (curr()[0][`co_${name}`] = value);
+  const attr = (name, value) =>
+    value === undefined ? get(name): set(name, value);
   // Control scope
   const enter = (...args) => stack.push(code(...args));
   const leave = () => {
