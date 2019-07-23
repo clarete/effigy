@@ -12,7 +12,7 @@ Expression <- Attribute
             / Unary
             / BinOp
 
-BinOp      <- { "BinOp" { Atom Primary Primary } }
+BinOp      <- { "BinOp" Expression Atom Expression }
 Unary      <- { "Unary" { Atom Primary } }
 Attribute  <- { "Attribute" { Load (LoadAttr / MethodCall)+ } }
             / { "Attribute" Load }

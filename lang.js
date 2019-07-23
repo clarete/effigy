@@ -6,10 +6,11 @@ const py37 = require('./arch/py37');
 
 // Operator Associativity
 const leftAssocOps = [
-  '+', '-', '==', '!=', '>=', '<=', '>', '<',
+  '*', '/', '%', '+', '-', '==',
+  '!=', '>=', '<=', '>', '<',
   '<<', '>>', '&', '|', '^',
 ];
-const rightAssocOps = ['*', '/', '%', '**'];
+const rightAssocOps = ['**'];
 
 // Helpers for cleaning up/simplifying AST
 const join = x => peg.consp(x) && x.flat().join('') || x;
@@ -21,10 +22,13 @@ const rename = ([,v], n) => [n, v];
 // Correct associativity for operators
 const leftAssoc = (_, x) => {
   if (!multi(x)) return x;
-  const [head, ...[tail]] = x;
-  if (leftAssocOps.includes(tail[0]))
-    return ["BinOp", [tail[0], tail[1], head]];
-  return tail.reduce((t, h) => ["BinOp", [...h, t]], head);
+  if (!multi(x[1])) {
+    const [left, [op, right]] = x;
+    return ['BinOp', left, op, right];
+  } else {
+    const [head, ...[tail]] = x;
+    return tail.reduce((h, t) => ['BinOp', h, ...t], head);
+  }
 };
 function rightAssoc(_, x) {
   if (!multi(x)) return x;
@@ -82,7 +86,7 @@ const parserActions = {
   BitShifting: leftAssoc,
   Comparison: leftAssoc,
   Term: leftAssoc,
-  Factor: rightAssoc,
+  Factor: leftAssoc,
   Power: rightAssoc,
   // Attribute Access/method call
   Attribute: (n, x) => {
@@ -394,7 +398,6 @@ function translate(tree, flags=0, compiler=dummyCompiler()) {
   const actions = {
     Module: (_, x) => module(x),
     Expression: (n, x) => [n, backtrack(x)],
-    // Scope: (_, x, s) => scope(x, s),
     ScopeId: (_, x, s) => scopeId(x, s),
     Param: (_, x) => newVarName(x()[1]),
     Load: (_, x) => load(x()[1]),
@@ -407,7 +410,7 @@ function translate(tree, flags=0, compiler=dummyCompiler()) {
     Number: (_, x) => loadConst(x()[1]),
     LoadAttr: (_, x) => loadAttr(x()[1]),
     Atom: (_, x) => x(),
-    BinOp: (_, x) => emit(BIN_OP_MAP[x()[1][0]]),
+    BinOp: (_, x) => emit(BIN_OP_MAP[x()[2]]),
     Unary: (_, x) => emit(UN_OP_MAP[x()[1][0]]),
     Primary: (_, x) => x()[1],
     Value: (_, x) => x()[1],

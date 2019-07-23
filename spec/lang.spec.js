@@ -7,7 +7,7 @@ describe("Scope", () => {
 
     const subScope = {
       node: 'lambda',
-      uses: ['a', 'p'],
+      uses: ['p', 'a'],
       defs: ['p'],
       fast: ['p'],
       globals: ['a', 'f'],      // `a' was defined outside `f'.
@@ -140,7 +140,7 @@ describe("Translate", () => {
         const code = translate(tree);
 
         expect(code).toEqual({
-          constants: [3, 4, 2, null],
+          constants: [2, 3, 4, null],
           names: [],
           varnames: [],
           freevars: [],
@@ -148,8 +148,8 @@ describe("Translate", () => {
           instructions: [
             ['load-const', 0],
             ['load-const', 1],
-            ['binary-multiply'],
             ['load-const', 2],
+            ['binary-multiply'],
             ['binary-add'],
             ['load-const', 3],
             ['return-value'],
@@ -161,7 +161,7 @@ describe("Translate", () => {
         const code = translate(tree);
 
         expect(code).toEqual({
-          constants: [3, 2, null],
+          constants: [2, 3, null],
           names: ['print'],
           varnames: [],
           freevars: [],
@@ -182,7 +182,7 @@ describe("Translate", () => {
         const code = translate(tree);
 
         expect(code).toEqual({
-          constants: [3, 2, null],
+          constants: [2, 3, null],
           names: [],
           varnames: [],
           freevars: [],
@@ -346,10 +346,10 @@ describe("Translate", () => {
               freevars: [],
               cellvars: [],
               instructions: [
-                ['load-const', 0],
-                ['load-global', 0],
                 ['load-fast', 0],
+                ['load-global', 0],
                 ['binary-add'],
+                ['load-const', 0],
                 ['binary-add'],
                 ['return-value'],
               ],
@@ -393,8 +393,8 @@ describe("Translate", () => {
             freevars: [],
             cellvars: [],
             instructions: [
-              [ 'load-const', 0 ],
               [ 'load-fast', 0 ],
+              [ 'load-const', 0 ],
               [ 'binary-add' ],
               [ 'store-fast', 1 ],
               [ 'load-fast', 1 ],
@@ -425,7 +425,6 @@ f = fn(p) {
 print(f(1))      # 9
 `);
         const code = translate(tree);
-        console.log(code);
 
         expect(code).toEqual({
           constants: [
@@ -438,8 +437,8 @@ print(f(1))      # 9
                   freevars: ['p'],
                   cellvars: [],
                   instructions: [
-                    ['load-fast', 0],  // y
                     ['load-deref', 0], // p
+                    ['load-fast', 0],  // y
                     ['binary-add'],
                     ['return-value'],
                   ],
@@ -460,8 +459,8 @@ print(f(1))      # 9
                 ['make-function', 8],
                 ['store-fast', 1],  // save above lambda into local `x'
 
-                ['load-const', 3],  // 2
                 ['load-deref', 0],  // `p' from above scope
+                ['load-const', 2],  // 2
                 ['binary-add'],
                 ['store-deref', 0], // `p'
 
