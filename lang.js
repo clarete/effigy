@@ -445,7 +445,8 @@ function translateFile(filename) {
   // Output to a file
   const fileNameNoExt = path.basename(file, path.extname(file));
   const fileNameOutput = `${fileNameNoExt}.pyc`;
-  fs.writeFileSync(fileNameOutput, buffer, 'binary');
+  const fileNameFinal = path.join(path.dirname(file), fileNameOutput);
+  fs.writeFileSync(fileNameFinal, buffer, 'binary');
 }
 
 module.exports = {
