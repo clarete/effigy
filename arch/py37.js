@@ -192,6 +192,11 @@ function compiler(co_filename) {
   const stack = [];
   // Current object
   const curr = () => stack[stack.length-1];
+  const attr = name => name === 'instructions'
+    ? curr()[1]
+    : name === 'constants'
+    ? curr()[0][`co_consts`]
+    : curr()[0][`co_${name}`];
   // Control scope
   const enter = (...args) => stack.push(code(...args));
   const leave = () => {
@@ -206,11 +211,14 @@ function compiler(co_filename) {
   // -- Mutator for instructions
   const emit = (op, arg) =>
     curr()[1].push(arg !== undefined ? [op, arg] : [op]);
-  // -- Mutators for adding new items to tables
-  const newConst = c => addToTable(curr()[0].co_consts, c);
-  const newName = c => addToTable(curr()[0].co_names, c);
+  const backtrack = (f) => {
+    const current = curr();
+    const copy = current[1].slice();
+    try { return f(); }
+    catch (e) { current[1] = copy; throw e; }
+  };
   // -- Basic interface for compiler
-  return { emit, newConst, newName, enter, leave };
+  return { enter, leave, emit, attr, backtrack };
 }
 
 function header(mtime, length, write) {
