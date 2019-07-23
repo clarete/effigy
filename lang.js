@@ -371,6 +371,9 @@ function translate(tree, flags=0, compiler=dummyCompiler()) {
     attr('argcount', peg.consp(params[1])
       ? params[1].length
       : params.length - 1);
+    // Update number of local variables
+    attr('nlocals', attr('varnames').length);
+    // End the function
     emit('return-value');
     const code = leave();
     popscope();
