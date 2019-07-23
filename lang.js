@@ -279,7 +279,7 @@ function translate(tree, flags=0, compiler=dummyCompiler()) {
   // 3.1. Traverse tree once to build the scope
   const [symtable, scopedTree] = translateScope(tree, trGrammar);
   // 3.2. Translation Actions
-  const { enter, leave, backtrack, attr, emit } = compiler;
+  const { enter, leave, emit, attr, backtrack } = compiler;
   // -- Mutators for adding new items to tables
   const newConst = c => addToTable(attr('constants'), c);
   const newName = c => addToTable(attr('names'), c);
