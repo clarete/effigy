@@ -180,8 +180,8 @@ function compiler(co_filename) {
   // Code Object
   const code = ({
     co_name = "",
-    co_flags = 64,
-    co_stacksize = 2, // wat
+    co_flags = 0,
+    co_stacksize = 5, // wat
   }) => [
     new PyCode({
       co_flags, co_stacksize, co_name, co_filename,

@@ -6,7 +6,7 @@ Code       <- { "Code" { (Statement / Expression)+ } }
             / { "Code" (Statement / Expression) }
 
 Statement  <- { "Statement" Assignment }
-Assignment <- { "Assignment" { Expression Store } }
+Assignment <- { "Assignment" { Expression (Store / StoreLex) } }
 Expression <- Attribute
             / Primary
             / Unary
@@ -48,5 +48,6 @@ Number     <- { "Number" Atom }
 
 Load       <- { "Load" Atom  }
 Store      <- { "Store" Atom  }
+StoreLex   <- { "StoreLex" Atom  }
 
 Atom       <- !{ .* } .

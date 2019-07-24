@@ -33,8 +33,9 @@ Call            <- (Lambda / Identifier) CallParams
 CallParams      <- _PROP Expression? (_PARAMSEP Expression)* _PRCL
 
 # Statements
-Statement       <- ReturnStm / WhileStm / ForStm / IfStm / Function / Assignment
+Statement       <- ReturnStm / WhileStm / ForStm / IfStm / Function / Assignment / LexAssignment
 Assignment      <- Identifier _ASSIGN Expression
+LexAssignment   <- _LET Identifier _ASSIGN Expression
 
 # Control Flow Statements
 ForStm          <- _FOR ForSteps Code
@@ -69,6 +70,7 @@ _FN             <- 'fn'           _
 _WHILE          <- 'while'        _
 _IF             <- 'if'           _
 _RETURN         <- 'return'       _
+_LET            <- 'let'          _
 
 # Lexical Delimiters
 _DQUOTE         <- '"'

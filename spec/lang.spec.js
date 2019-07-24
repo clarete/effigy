@@ -11,7 +11,7 @@ describe("Scope", () => {
       defs: ['p'],
       fast: ['p'],
       globals: ['a', 'f'],      // `a' was defined outside `f'.
-      children: [], cell: [], free: [], deref: [],
+      children: [], cell: [], free: [], deref: [], lex: [],
     };
     const topScope = {
       node: 'module',
@@ -20,7 +20,7 @@ describe("Scope", () => {
       _g: ['a', 'f'],
       children: [subScope],
       globals: [],
-      cell: [], free: [], deref: [], fast: [],
+      cell: [], free: [], deref: [], fast: [], lex: [],
     };
     expect(scope).toEqual([topScope, subScope]);
   });
@@ -34,6 +34,8 @@ describe("Translate", () => {
         const code = translate(tree);
 
         expect(code).toEqual({
+          nlocals: 0,
+          argcount: 0,
           constants: [null],
           names: ['print'],
           varnames: [],
@@ -53,6 +55,8 @@ describe("Translate", () => {
         const code = translate(tree);
 
         expect(code).toEqual({
+          nlocals: 0,
+          argcount: 0,
           constants: [42, null],
           names: ['print'],
           varnames: [],
@@ -73,6 +77,8 @@ describe("Translate", () => {
         const code = translate(tree);
 
         expect(code).toEqual({
+          nlocals: 0,
+          argcount: 0,
           constants: [42, 43, null],
           names: ['print'],
           varnames: [],
@@ -94,6 +100,8 @@ describe("Translate", () => {
         const code = translate(tree);
 
         expect(code).toEqual({
+          nlocals: 0,
+          argcount: 0,
           constants: [1, 2, null],
           names: ['print'],
           varnames: [],
@@ -111,7 +119,7 @@ describe("Translate", () => {
           ],
         });
       });
-    });                         // FunCall
+    });                         // Call
 
     describe("Unary", () => {
       it("should provide negative operation", () => {
@@ -119,6 +127,8 @@ describe("Translate", () => {
         const code = translate(tree);
 
         expect(code).toEqual({
+          nlocals: 0,
+          argcount: 0,
           constants: [ null ],
           names: ['a'],
           varnames: [],
@@ -140,6 +150,8 @@ describe("Translate", () => {
         const code = translate(tree);
 
         expect(code).toEqual({
+          nlocals: 0,
+          argcount: 0,
           constants: [2, 3, 4, null],
           names: [],
           varnames: [],
@@ -161,6 +173,8 @@ describe("Translate", () => {
         const code = translate(tree);
 
         expect(code).toEqual({
+          nlocals: 0,
+          argcount: 0,
           constants: [2, 3, null],
           names: ['print'],
           varnames: [],
@@ -182,6 +196,8 @@ describe("Translate", () => {
         const code = translate(tree);
 
         expect(code).toEqual({
+          nlocals: 0,
+          argcount: 0,
           constants: [2, 3, null],
           names: [],
           varnames: [],
@@ -238,6 +254,8 @@ describe("Translate", () => {
         const code = translate(tree);
 
         expect(code).toEqual({
+          nlocals: 0,
+          argcount: 0,
           constants: [null],
           names: ['print', '__doc__'],
           varnames: [],
@@ -257,6 +275,8 @@ describe("Translate", () => {
         const code = translate(tree);
 
         expect(code).toEqual({
+          nlocals: 0,
+          argcount: 0,
           constants: [null],
           names: ['print', '__doc__', '__str__'],
           varnames: [],
@@ -278,6 +298,8 @@ describe("Translate", () => {
         const code = translate(tree);
 
         expect(code).toEqual({
+          nlocals: 0,
+          argcount: 0,
           constants: [20, null],
           names: ['object', '__doc__', 'zfill'],
           varnames: [],
@@ -301,7 +323,11 @@ describe("Translate", () => {
         const tree = parse('fn() 1');
         const code = translate(tree);
         expect(code).toEqual({
+          nlocals: 0,
+          argcount: 0,
           constants: [{
+            nlocals: 0,
+            argcount: 0,
             constants: [1],
             names: [],
             varnames: [],
@@ -337,9 +363,13 @@ describe("Translate", () => {
         const code = translate(tree);
 
         expect(code).toEqual({
+          nlocals: 0,
+          argcount: 0,
           constants: [
             1,
             {
+              nlocals: 1,
+              argcount: 1,
               constants: [1],
               names: ['a'],
               varnames: ['p'],
@@ -386,7 +416,11 @@ describe("Translate", () => {
         const code = translate(tree);
 
         expect(code).toEqual({
+          nlocals: 0,
+          argcount: 0,
           constants: [{
+            nlocals: 2,
+            argcount: 1,
             constants: [1],
             names: [],
             varnames: ['p', 'a'],
@@ -427,10 +461,16 @@ print(f(1))      # 9
         const code = translate(tree);
 
         expect(code).toEqual({
+          nlocals: 0,
+          argcount: 0,
           constants: [
             {
+              nlocals: 2,
+              argcount: 1,
               constants: [
                 {
+                  nlocals: 1,
+                  argcount: 1,
                   constants: [],
                   names: [],
                   varnames: ['y'],
@@ -500,6 +540,87 @@ print(f(1))      # 9
         });
       });
     });                         // Scopes
+
+    it("should support let", () => {
+      const tree = parse(`
+f = fn() {
+  let x = 1;
+  foo = fn(v) { x = x + v; x };
+  foo(1);
+  x
+}
+print(f()) # 2
+      `);
+      const code = translate(tree);
+
+      expect(code).toEqual({
+        constants: [
+          {
+            constants: [
+              1,
+              {
+                constants: [],
+                names: [],
+                varnames: ['v'],
+                freevars: ['x'],
+                cellvars: [],
+                nlocals: 1,
+                argcount: 1,
+                instructions: [
+                  ['load-deref', 0],
+                  ['load-fast', 0],
+                  ['binary-add' ],
+                  ['store-deref', 0],
+                  ['load-deref', 0],
+                  ['return-value' ],
+                ],
+              },
+              '<lambda>' ],
+            nlocals: 1,
+            argcount: 0,
+            names: [],
+            varnames: ['foo'],
+            freevars: [],
+            cellvars: ['x'],
+            instructions: [
+              ['load-const', 0],
+              ['store-deref', 0],
+              ['load-closure', 0],
+              ['build-tuple', 1],
+              ['load-const', 1 ],
+              ['load-const', 2 ],
+              ['make-function', 8 ],
+              ['store-fast', 0],
+              ['load-fast', 0],
+              ['load-const', 0],
+              ['call-function', 1],
+              ['load-deref', 0],
+              ['return-value'],
+            ],
+          },
+          '<lambda>',
+          null ],
+        names: ['f', 'print'],
+        varnames: [],
+        freevars: [],
+        cellvars: [],
+        nlocals: 0,
+        argcount: 0,
+        instructions: [
+          ['load-const', 0],
+          ['load-const', 1],
+          ['make-function', 0],
+          ['store-name', 0],
+
+          ['load-name', 1],
+          ['load-name', 0],
+          ['call-function', 0],
+          ['call-function', 1],
+          ['load-const', 2],
+          ['return-value'],
+        ],
+      });
+    });
   });                           // Expression
 
   describe('Statement', () => {
@@ -509,6 +630,8 @@ print(f(1))      # 9
         const code = translate(tree);
 
         expect(code).toEqual({
+          nlocals: 0,
+          argcount: 0,
           constants: [51, null],
           names: ['a', 'print'],
           varnames: [],

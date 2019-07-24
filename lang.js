@@ -105,10 +105,17 @@ const parserActions = {
       return x;
     })]];
   },
-  // Fix associativity of assignment operator
+  // Move variable name after expression and add a `Store' node
+  // instead of keeping the original `Identifier'.
   Assignment: (n, x) => {
     const [identifier, expression] = x;
     return [n, [expression, rename(identifier, "Store")]];
+  },
+  // Lexical Assignment: Rename top node to just assignment & rename
+  // store instruction to storeLex
+  LexAssignment: (n, x) => {
+    const [identifier, expression] = x;
+    return ['Assignment', [expression, rename(identifier, "StoreLex")]];
   },
 };
 
@@ -128,6 +135,8 @@ function dummyCompiler() {
   // Code object shape
   const code = () => ({
     constants: [],
+    argcount: 0,
+    nlocals: 0,
     names: [],
     varnames: [],
     freevars: [],
@@ -138,7 +147,10 @@ function dummyCompiler() {
   const stack = [];
   // Current object
   const curr = () => stack[stack.length-1];
-  const attr = name => curr()[name];
+  const get = name => curr()[name];
+  const set = (name, value) => curr()[name] = value;
+  const attr = (name, value) =>
+    value === undefined ? get(name): set(name, value);
   // Control scope
   const enter = () => stack.push(code());
   const leave = () => stack.pop();
@@ -186,7 +198,7 @@ function translateScope(tree, trGrammar) {
   const newsymtable = ({ node }) => ({
     node,
     // Bookkeeping
-    uses: [], defs: [], children: [],
+    uses: [], defs: [], lex: [], children: [],
     // Results
     fast: [], cell: [], free: [], deref: [], globals: [],
   });
@@ -198,14 +210,19 @@ function translateScope(tree, trGrammar) {
   const symActions = {
     Atom: (_, x) => x(),
     Param: (_, x) => {
-      const v0 = x();
-      const v = v0[1];
-      addToTable(currstk().defs, v);
-      return v0;
+      const value = x();
+      addToTable(currstk().defs, value[1]);
+      return value;
     },
     Store: (_, x) => {
       const value = x();
       addToTable(currstk().defs, value[1]);
+      return value;
+    },
+    StoreLex: (_, x) => {
+      const value = x();
+      addToTable(currstk().defs, value[1]);
+      addToTable(currstk().lex, value[1]);
       return value;
     },
     Load: (_, x) =>  {
@@ -246,7 +263,7 @@ function translateScope(tree, trGrammar) {
   const intersection = (a, b) => a.filter(x => b.includes(x));
   const difference = (a, b) => a.filter(x => !b.includes(x));
   let root = null;
-  const analyze = (node, parentDefs=[]) => {
+  const analyze = (node, parentDefs=[], lexDefs=[]) => {
     // Initialize list of globals
     if (!root) { root = node; root._g = root.defs.slice(); }
     const isModule = node.node === 'module';
@@ -255,17 +272,22 @@ function translateScope(tree, trGrammar) {
     // What to pass when analyzing children
     parentDefs = !isModule ? parentDefs.concat(node.defs) : [];
     // Go down children nodes
-    node.children.map(n => analyze(n, parentDefs));
+    node.children.map(n => analyze(n, parentDefs, lexDefs.concat(node.lex)));
     // Update list of globals available to that node
     const _g = difference(root._g, node.fast);
     if (!isModule) node.globals = difference(_g, parentDefs);
     // Read direct children's free vars
     const childUses = node.children.map(n => n.free).flat();
     const allUses = childUses.concat(node.uses);
+    // All lexical vars
+    const lexUses = intersection(lexDefs, node.defs);
     // collect info post traverse
     node.cell = intersection(childUses, node.defs);
     node.free = difference(intersection(allUses, difference(parentDefs, node.defs)), node.globals);
     node.deref = difference(node.cell.concat(node.free), node.globals);
+    // Adjust local scope for lexic-scoped vars to work
+    node.free = node.free.concat(lexUses);
+    node.deref = node.deref.concat(lexUses);
   };
   analyze(scope);
 
@@ -406,6 +428,7 @@ function translate(tree, flags=0, compiler=dummyCompiler()) {
     Load: (_, x) => load(x()[1]),
     LoadMethod: (_, x) => loadMethod(x()[1]),
     Store: (_, x) => store(x()[1]),
+    StoreLex: (_, x) => store(x()[1]),
     Call: (_, x) => call('function', x()[1]),
     MethodCall: (_, x) => call('method', x()[1]),
     CallParams: (_, x) => x(),
