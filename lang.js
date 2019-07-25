@@ -198,7 +198,7 @@ function translateScope(tree, trGrammar) {
   const newsymtable = ({ node }) => ({
     node,
     // Bookkeeping
-    uses: [], defs: [], lex: [], children: [],
+    uses: [], defs: [], lex: [], children: [], nparams: 0,
     // Results
     fast: [], cell: [], free: [], deref: [], globals: [],
   });
@@ -212,6 +212,7 @@ function translateScope(tree, trGrammar) {
     Param: (_, x) => {
       const value = x();
       addToTable(currstk().defs, value[1]);
+      currstk().nparams++;
       return value;
     },
     Store: (_, x) => {
@@ -389,10 +390,7 @@ function translate(tree, flags=0, compiler=dummyCompiler()) {
     scope.free.forEach(x => addToTable(attr('freevars'), x));
     scope.cell.forEach(x => addToTable(attr('cellvars'), x));
     // Update argument count
-    const params = v[1][1];
-    attr('argcount', peg.consp(params[1])
-      ? params[1].length
-      : params.length - 1);
+    attr('argcount', scope.nparams);
     // Update number of local variables
     attr('nlocals', attr('varnames').length);
     // End the function
