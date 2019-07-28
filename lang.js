@@ -49,7 +49,6 @@ const parserActions = {
   Identifier: (n, x) => ["Load", join(x)],
   // We'll take their value the way it is
   Expression: (_, x) => x,
-  CallParams: (_, x) => x,
   PLUS: (_, x) => x,
   MINUS: (_, x) => x,
   STAR: (_, x) => x,
@@ -69,6 +68,7 @@ const parserActions = {
   BXOR: (_, x) => x,
   // Not relevant if captured single result
   Primary: lift,
+  Callable: lift,
   Params: (n, x) => {
     // Don't allow returning [Params, null]
     if (!multi(x) && x === null) return [n];
@@ -361,17 +361,16 @@ function translate(tree, flags=0, compiler=dummyCompiler()) {
   };
   // -- Emit instructions for more involved operations
   const call = (n, c) => {
-    if (peg.consp(c)) {
-      const [, args] = c;
-      // More than one parameter
-      if (peg.consp(args) && peg.consp(args[0]))
-        emit(`call-${n}`, args.length);
-      // Single Param
-      else emit(`call-${n}`, 1);
-    } else {
-      // No Params
-      emit(`call-${n}`, 0);
-    }
+    if (global.gc) {global.gc();}
+    const length =
+          c[1].length == 1
+          ? 0
+          : (peg.consp(c[1])
+             && peg.consp(c[1][1])
+             && typeof c[1][1][0] !== 'string')
+          ? c[1][1].length
+          : c[1].length -1;
+    emit(`call-${n}`, length);
     return c;
   };
   const scopeId = (visit) => {
@@ -429,7 +428,8 @@ function translate(tree, flags=0, compiler=dummyCompiler()) {
     StoreLex: (_, x) => store(x()[1]),
     Call: (_, x) => call('function', x()[1]),
     MethodCall: (_, x) => call('method', x()[1]),
-    CallParams: (_, x) => x(),
+    // CallParams: (_, x) => x(),
+    Params: (_, x) => x()[1],
     Lambda: (_, x, s) => lambdaDef(x, s),
     Number: (_, x) => loadConst(x()[1]),
     LoadAttr: (_, x) => loadAttr(x()[1]),

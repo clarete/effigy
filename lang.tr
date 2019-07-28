@@ -19,28 +19,37 @@ Attribute  <- { "Attribute" { Load (LoadAttr / MethodCall)+ } }
 LoadAttr   <- { "LoadAttr" Atom }
 LoadMethod <- { "LoadMethod" Atom }
 MethodCall <- { "MethodCall" LoadMethod }
-            / { "MethodCall" { LoadMethod Primary+ } }
+            / { "MethodCall" { LoadMethod CallParams } }
 
 ScopeId    <- { "ScopeId" Atom }
 
 Primary    <- Value
-            / Call
             / Lambda
             / Load
             / Expression
+            / Call
 
-Lambda     <- { "Lambda" { Params Code } }
-            / { "Lambda" { ScopeId Params Code } }
-Params     <- { "Params" { Param+ } } # Multiple Params
-            / { "Params" Param }      # One Param
-            / { "Params" }            # No Parameters
+Lambda     <- { "Lambda" { Params Code } }             # PreScopeAnalysis
+            / { "Lambda" { ScopeId Params Code } }     # PostScopeAnalysis
+
+Params     <- { "Params" { Param+ } }                  # Multiple
+            / { "Params" Param }                       # Single
+            / { "Params" }                             # None
 
 Param      <- { "Param" Atom }
 
-Call       <- { "Call" { Load CallParams } }  # One or more parameters
-            / { "Call" Load }                 # No parameters
+Call       <- { "Call" { (Load / Primary) CallParams } } # One or more parameters
+            / { "Call" (Load / Primary) CallParams } # No parameters
 
-CallParams <- { Expression* } / Expression
+CallParams <- { "CallParams" ({ Expression+ } / Expression / Atom)? }
+
+# CallParams <- CallParamsMulti / CallParamsSingle / CallParamsNull / CallParamsNone
+
+CallParamsMulti   <- { "CallParams" { Expression+ } }
+CallParamsSingle  <- { "CallParams" Expression }
+CallParamsNull    <- { "CallParams" Atom }
+CallParamsNone    <- { "CallParams" }
+
 
 Value      <- { "Value" Number }
 

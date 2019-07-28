@@ -13,24 +13,23 @@ Term            <- Factor ((PLUS / MINUS) Factor)*
 Factor          <- Power ((STAR / SLASH) Power)*
 Power           <- Unary ((POWER / MOD) Unary)*
 Unary           <- (PLUS / MINUS)? Attribute
-
-Attribute       <- Primary (_DOT (Call / Identifier))*
+Attribute       <- Callable (_DOT Callable)*
+Callable        <- Call / Primary
 
 Primary         <- _PROP Expression _PRCL
                  / Value
-                 / Call
                  / Lambda
                  / Identifier
 
 # Function Declaration
 Function        <- _FN Identifier Params Code
 Lambda          <- _FN Params Code
-Params          <- _PROP Param? (_PARAMSEP Param)* _PRCL
+Params          <- _PROP Param? (_COMA Param)* _PRCL
 Param           <- Identifier (_ASSIGN Expression)?
 
 # Function Call
-Call            <- (Lambda / Identifier) CallParams
-CallParams      <- _PROP Expression? (_PARAMSEP Expression)* _PRCL
+Call            <- Primary CallParams
+CallParams      <- _PROP (Expression (_COMA Expression)*)? _PRCL
 
 # Statements
 Statement       <- ReturnStm / WhileStm / ForStm / IfStm / Function / Assignment / LexAssignment
@@ -39,7 +38,7 @@ LexAssignment   <- _LET Identifier _ASSIGN Expression
 
 # Control Flow Statements
 ForStm          <- _FOR ForSteps Code
-ForSteps        <- _PROP (Expression / Assignment) _PARAMSEP Expression _PARAMSEP Expression _PRCL
+ForSteps        <- _PROP (Expression / Assignment) _COMA Expression _COMA Expression _PRCL
 Test            <- _PROP Expression _PRCL
 WhileStm        <- _WHILE Test Code
 IfStm           <- _IF Test Code ElseStm?
@@ -47,9 +46,10 @@ ElseStm         <- _ELSE Code
 ReturnStm       <- _RETURN Expression
 
 # Values
-Value           <- Number / String / BOOL
+Value           <- Number / String / BOOL / List
 Number          <- BIN / HEX / FLOAT / DEC
 String          <- _DQUOTE (!_DQUOTE .)* _DQUOTE _
+List            <- _SBOP (Expression (_COMA Expression)*)? _SBCL _
 
 # Lexcical Hierarchy
 
@@ -74,11 +74,13 @@ _LET            <- 'let'          _
 
 # Lexical Delimiters
 _DQUOTE         <- '"'
-_PARAMSEP       <- ',' _
+_COMA           <- ',' _
 _PROP           <- '(' _
 _PRCL           <- ')' _
 _CBOP           <- '{' _
 _CBCL           <- '}' _
+_SBOP           <- '[' _
+_SBCL           <- ']' _
 _ASSIGN         <- '=' _
 
 ## Arithmetic Operators

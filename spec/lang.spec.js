@@ -12,6 +12,7 @@ describe("Scope", () => {
       fast: ['p'],
       globals: ['a', 'f'],      // `a' was defined outside `f'.
       children: [], cell: [], free: [], deref: [], lex: [],
+      nparams: 1,
     };
     const topScope = {
       node: 'module',
@@ -21,6 +22,7 @@ describe("Scope", () => {
       children: [subScope],
       globals: [],
       cell: [], free: [], deref: [], fast: [], lex: [],
+      nparams: 0,
     };
     expect(scope).toEqual([topScope, subScope]);
   });
@@ -228,7 +230,7 @@ describe("Translate", () => {
            ['Attribute',
             [['Load', 'print'],
              ['LoadAttr', '__doc__'],
-             ['MethodCall', ['LoadMethod', '__str__']],
+             ['MethodCall', [['LoadMethod', '__str__'], ['CallParams', null]]],
              ['LoadAttr', '__str__']]]]);
       });
 
@@ -351,7 +353,14 @@ describe("Translate", () => {
           ],
         });
       });
-    });
+
+      it("should be callable", () => {
+        const tree = parse(`print((fn() 3)())`);
+        console.log(tree);
+        const code = translate(tree);
+        console.log(code);
+      });
+    });                         // Lambda
 
     describe('Nested Scopes', () => {
       it("should use global if no enclosing scope redefines name", () => {
@@ -621,6 +630,14 @@ print(f()) # 2
         ],
       });
     });
+
+    describe('Value', () => {
+      it("should support lists", () => {
+        // const tree = parse(`a = [1, 2, (fn() 3)()]`);
+        // console.log(tree);
+        // const code = translate(tree);
+      });
+    });                         // Value
   });                           // Expression
 
   describe('Statement', () => {

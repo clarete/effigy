@@ -10,5 +10,8 @@
     "test": "jasmine"
   },
   "author": "Lincoln Clarete",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "jasmine-fail-fast": "^2.0.0"
+  }
 }
