@@ -1,0 +1,4 @@
+# Function with global variable
+a = 1
+f = fn(p) p+a+1
+print(f(1)) # 3

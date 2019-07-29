@@ -1,0 +1,7 @@
+f = fn() {
+  let x = 1
+  foo = fn(v) { x = x + v; 0 }
+  foo(1)
+  x
+}
+print(f()) # 2

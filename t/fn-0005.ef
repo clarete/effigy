@@ -1,0 +1,11 @@
+# Closure defined in enclosing scope
+f = fn() {
+  let x = 1
+  foo = fn(v) {
+    x = x + v;
+    x
+  }
+  foo
+}
+g = f();
+print(g(1))  # 2
