@@ -1,10 +1,9 @@
 all: compile
 
-SRC := $(wildcard *.ef)
-PYC := $(SRC:.ef=.pyc)
+SRC := $(wildcard *.efg)
+PYC := $(SRC:.efg=.pyc)
 
 compile: $(PYC)
 clean:; -rm $(PYC)
 
-%.pyc: %.ef; cd .. ; ./compile t/$<
-
+%.pyc: %.efg; cd .. ; ./compile t/$<
