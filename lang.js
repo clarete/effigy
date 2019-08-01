@@ -189,10 +189,10 @@ const BIN_OP_MAP = {
    '^': 'binary-xor',
 };
 
-function translateScope(tree, trGrammar) {
-  if (!trGrammar)               // for tests
-    trGrammar = fs.readFileSync(path.resolve('lang.tr')).toString();
+const translateGrammarSource =
+  fs.readFileSync(path.resolve('lang.tr')).toString();
 
+function translateScope(tree) {
   let i = 0;
   const map = [];
   const symstk = [];
@@ -254,7 +254,7 @@ function translateScope(tree, trGrammar) {
 
   map[i++] = null;
   entersym('module');
-  const outTree = peg.pegc(trGrammar, symActions).matchl(tree, peg.delayedAction0);
+  const outTree = peg.pegc(translateGrammarSource, symActions).matchl(tree, peg.delayedAction0);
   const scope = map[0] = leavesym();
   // The following code evolved from the algorithm in the Tailbiter
   // article from Darius Bacon [0] with the root variable added to
@@ -302,9 +302,8 @@ function translateScope(tree, trGrammar) {
 
 function translate(tree, flags=0, assembler=dummyAssembler()) {
   // 3. Traverse the parse tree and emit code
-  const trGrammar = fs.readFileSync(path.resolve('lang.tr')).toString();
   // 3.1. Traverse tree once to build the scope
-  const [symtable, scopedTree] = translateScope(tree, trGrammar);
+  const [symtable, scopedTree] = translateScope(tree);
   // 3.2. Translation Actions
   const { enter, leave, emit, attr, backtrack } = assembler;
   // -- Mutators for adding new items to tables
@@ -443,7 +442,7 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
     Value: (_, x) => x()[1],
   };
   // 3.2. Traverse parse tree with transformation grammar
-  return peg.pegc(trGrammar, actions).matchl(scopedTree, peg.delayedAction0);
+  return peg.pegc(translateGrammarSource, actions).matchl(scopedTree, peg.delayedAction0);
 }
 
 function translateFile(filename) {
