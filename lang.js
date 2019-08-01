@@ -258,7 +258,9 @@ function translateScope(tree) {
   const scope = map[0] = leavesym();
   // The following code evolved from the algorithm in the Tailbiter
   // article from Darius Bacon [0] with the root variable added to
-  // bookkeep globals
+  // bookkeep globals and to accommodate the `let' modifier that marks
+  // a variable as a closure so nested functions can assign to that
+  // variable.
   //
   // [0] https://codewords.recurse.com/issues/seven/dragon-taming-with-tailbiter-a-bytecode-compiler#we-collate-the-variables-and-sub-scopes
   const intersection = (a, b) => a.filter(x => b.includes(x));
