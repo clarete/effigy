@@ -131,7 +131,7 @@ const addToTable = (t, i) => {
   return pos >= 0 ? pos : t.push(i)-1;
 };
 
-function dummyCompiler() {
+function dummyAssembler() {
   // Code object shape
   const code = () => ({
     constants: [],
@@ -164,7 +164,7 @@ function dummyCompiler() {
     try { return f(); }
     catch (e) { curr().instructions = copy; throw e; }
   };
-  // -- Basic interface for compiler
+  // -- Basic interface for assembler
   return { enter, leave, emit, attr, backtrack };
 }
 
@@ -299,13 +299,13 @@ function translateScope(tree, trGrammar) {
   return [map, tonat(outTree)];
 }
 
-function translate(tree, flags=0, compiler=dummyCompiler()) {
+function translate(tree, flags=0, assembler=dummyAssembler()) {
   // 3. Traverse the parse tree and emit code
   const trGrammar = fs.readFileSync(path.resolve('lang.tr')).toString();
   // 3.1. Traverse tree once to build the scope
   const [symtable, scopedTree] = translateScope(tree, trGrammar);
   // 3.2. Translation Actions
-  const { enter, leave, emit, attr, backtrack } = compiler;
+  const { enter, leave, emit, attr, backtrack } = assembler;
   // -- Mutators for adding new items to tables
   const newConst = c => addToTable(attr('constants'), c);
   const newName = c => addToTable(attr('names'), c);
@@ -450,7 +450,7 @@ function translateFile(filename) {
   const input = fs.readFileSync(file).toString();
 
   const tree = parse(input);
-  const code = translate(tree, 0, py37.compiler(path.basename(file)));
+  const code = translate(tree, 0, py37.assembler(path.basename(file)));
 
   // Read modification time of the source file
   const stats = fs.statSync(file);

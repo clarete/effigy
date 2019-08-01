@@ -176,7 +176,7 @@ const addToTable = (t, i) => {
   return pos >= 0 ? pos : t.push(i)-1;
 };
 
-function compiler(co_filename) {
+function assembler(co_filename) {
   // Code Object
   const code = ({
     co_name = "",
@@ -224,7 +224,7 @@ function compiler(co_filename) {
     try { return f(); }
     catch (e) { current[1] = copy; throw e; }
   };
-  // -- Basic interface for compiler
+  // -- Basic interface for assembler
   return { enter, leave, emit, attr, backtrack };
 }
 
@@ -242,7 +242,7 @@ function opcodeFromString(n) {
 
 module.exports = {
   code,
-  compiler,
+  assembler,
   header,
   HEADER_SIZE,
 };
