@@ -119,11 +119,12 @@ const parserActions = {
   },
 };
 
+// 1. Parse the PEG description
+const compiledParserGrammar =
+   peg.pegc(fs.readFileSync(path.resolve('lang.peg')).toString(), parserActions);
 function parse(input) {
-  // 1. Parse the PEG description
-  const grammar = fs.readFileSync(path.resolve('lang.peg')).toString();
   // 2. Match the PEG against source input
-  return peg.pegc(grammar, parserActions).match(input);
+  return compiledParserGrammar.match(input);
 }
 
 const addToTable = (t, i) => {
