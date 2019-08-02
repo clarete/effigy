@@ -350,45 +350,18 @@ const lst = (l) => consp(l) ? new List(...l) : new List(l);
 class Predicate {}
 const pred = () => new Predicate();
 
-// Immediate action
-const imAction = (a, id, th) => {
-  const idKey = Symbol.keyFor(id);
-  if (a) {
-    const ath = a[idKey];
-    if (typeof ath === 'function') {
-      return ath(idKey, th());
-    }
-  }
-  return [idKey, th()];
-};
-
-// The only difference from the above function is that it doesn't
-// execute the match thunk in `th', it passes the callable to the
-// action
-const delayedAction = (a, id, th) => {
-  const idKey = Symbol.keyFor(id);
-  if (a) {
-    const ath = a[idKey];
-    if (typeof ath === 'function') {
-      return ath(idKey, th);
-    }
-  }
-  return [idKey, th()];
-};
-
-const delayedAction0 = (a, id, th) => {
-  const idKey = Symbol.keyFor(id);
-  if (a) {
-    const ath = a[idKey];
-    if (typeof ath === 'function') {
-      return ath(idKey, th);
-    }
-  }
-  return th();
-};
-
-function pegc(g, a) {
+function pegc(g) {
   const { grammar: G, start } = pegt(peg(scan(g)).Grammar());
+
+  // Clean up remains of zeroOrMore successful match that doesn't
+  // consume any input and leaves a dangling []. There's probably a
+  // better way to do this.
+  const cleanList = (l) => {
+    if (!consp(l)) return l;
+    const out = l.filter(x => x !== null);
+    return out.length > 0 ? out : null;
+  };
+  const cl = (l) => singleOrList(cleanList(l));
 
   const match = (s, actionfn) => {
     const prims = {
@@ -412,16 +385,6 @@ function pegc(g, a) {
       return call(fn, e);
     };
 
-    // Clean up remains of zeroOrMore successful match that doesn't
-    // consume any input and leaves a dangling []. There's probably a
-    // better way to do this.
-    const cleanList = (l) => {
-      if (!consp(l)) return l;
-      const out = l.filter(x => x !== null);
-      return out.length > 0 ? out : null;
-    };
-    const cl = (l) => singleOrList(cleanList(l));
-
     // If the identifier starts with an underscore (_) this not quite
     // elegant piece of code will prevent it from being captured in
     // the parse tree. That doesn't apply to the first rule though.
@@ -441,17 +404,80 @@ function pegc(g, a) {
       } else if (typeof e === 'string') {
         return s.must(e);
       } else if (typeof e === 'symbol') {
-        const output = actionfn(a, e, thunk(V(G, e)));
+        const output = actionfn(e, matchexpr(V(G, e)));
         return skipcapture(e) ? null : output;
       }
       throw new Error('Unreachable');
     };
     // Kickoff eval
-    return actionfn(a, start, thunk(G[start]));
+    return actionfn(start, matchexpr(G[start]));
   };
+
+  const im = (e, v) => {
+    return [Symbol.keyFor(e), v];
+  };
+
+  const ev = (e, value) => {
+    const key = Symbol.keyFor(e);
+    return {
+      __annoying__: true,
+      key,
+      value,
+    };
+  };
+
+  const run = (result, actions) => {
+    const ostk = [];
+    const ostkcurr  = () => ostk[ostk.length-1];
+    const ostkenter = () => ostk.push([]);
+    const ostkleave = () => ostk.pop();
+    const ostkpush = (t) => ostkcurr().push(t);
+
+    class L {}
+    class K { constructor(n) { this.n = n; } };
+
+    ostkenter();
+
+    const stk = [result];
+    while (stk.length > 0) {
+      const e = stk.pop();
+      if (e === null) {
+        ostkpush(e);
+      } else if (e.__annoying__) {
+        ostkenter();
+        stk.push(new K(e.key));
+        if (consp(e.value)) {
+          ostkenter();
+          stk.push(new L);
+          e.value.reverse().forEach(x => stk.push(x));
+        } else {
+          stk.push(e.value);
+        }
+      } else if (consp(e)) {
+        ostkenter();
+        stk.push(new L);
+        e.reverse().forEach(x => stk.push(x));
+      } else if (e instanceof K) {
+        const action = actions[e.n];
+        const value = cl(ostkleave());
+        if (action) ostkpush(action(e.n, value));
+        else ostkpush([e.n, value]);
+      } else if (e instanceof L) {
+        ostkpush(ostkleave());
+      } else {
+        ostkpush(e);
+      }
+    }
+    return cl(ostkleave());
+  };
+
   return {
-    match: (s, af=imAction) => match(scan(s), af),
-    matchl: (l, af=imAction) => match(scanl([l]), af),
+    match: (s, af=im) => match(scan(s), af),
+    matchl: (l, af=im) => match(scanl([l]), af),
+    bind: actions => source =>
+      run(match(scan(source), ev), actions),
+    bindl: actions => source =>
+      run(match(scanl([source]), ev), actions),
   };
 }
 
@@ -472,7 +498,4 @@ module.exports = {
   lst,
   prim,
   consp,
-
-  delayedAction,
-  delayedAction0,
 };

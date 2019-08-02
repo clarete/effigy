@@ -4,14 +4,6 @@ const path = require('path');
 const peg = require('./peg');
 const py37 = require('./arch/py37');
 
-// Operator Associativity
-const leftAssocOps = [
-  '*', '/', '%', '+', '-', '==',
-  '!=', '>=', '<=', '>', '<',
-  '<<', '>>', '&', '|', '^',
-];
-const rightAssocOps = ['**'];
-
 // Helpers for cleaning up/simplifying AST
 const join = x => peg.consp(x) && x.flat().join('') || x;
 const toint = (x, b) => parseInt(join(x), b);
@@ -23,6 +15,7 @@ const rename = ([,v], n) => [n, v];
 const leftAssoc = (_, x) => {
   if (!multi(x)) return x;
   if (!multi(x[1])) {
+    console.log('THE X', x);
     const [left, [op, right]] = x;
     return ['BinOp', left, op, right];
   } else {
@@ -30,25 +23,19 @@ const leftAssoc = (_, x) => {
     return tail.reduce((h, t) => ['BinOp', h, ...t], head);
   }
 };
-function rightAssoc(_, x) {
-  if (!multi(x)) return x;
-  const [head, ...[tail]] = x;
-  if (rightAssocOps.includes(tail[0]))
-    return ["BinOp", [tail[0], head, tail[1]]];
-  return tail.reduce((t, h) => {
-    const [nh, ...nt] = [...h, t];
-    return ["BinOp", [nh, ...nt]];
-  }, head);
-}
+
+// TODO: right association (for ** operator)
+const rightAssoc = leftAssoc;
 
 const parserActions = {
   // Minimal transformation for numbers & names
-  DEC: (_, x) => toint(x, 10),
-  HEX: (_, x) => toint(x, 16),
-  BIN: (_, x) => toint(join(x).replace('0b', ''), 2),
-  Identifier: (n, x) => ["Load", join(x)],
+  DEC: (_, x) => toint(x[0], 10),
+  HEX: (_, x) => toint(x[0], 16),
+  BIN: (_, x) => toint(join(x[0]).replace('0b', ''), 2),
+  Identifier: (n, x) => ["Load", join(x[0])],
   // We'll take their value the way it is
   Expression: (_, x) => x,
+  Primary: (_, x) => x,
   CallParams: (_, x) => x,
   PLUS: (_, x) => x,
   MINUS: (_, x) => x,
@@ -68,7 +55,6 @@ const parserActions = {
   BOR: (_, x) => x,
   BXOR: (_, x) => x,
   // Not relevant if captured single result
-  Primary: lift,
   Params: (n, x) => {
     // Don't allow returning [Params, null]
     if (!multi(x) && x === null) return [n];
@@ -120,11 +106,12 @@ const parserActions = {
 };
 
 // 1. Parse the PEG description
-const compiledParserGrammar =
-   peg.pegc(fs.readFileSync(path.resolve('lang.peg')).toString(), parserActions);
+const compiledParserGrammar = peg
+  .pegc(fs.readFileSync(path.resolve('lang.peg')).toString())
+  .bind(parserActions);
 function parse(input) {
   // 2. Match the PEG against source input
-  return compiledParserGrammar.match(input);
+  return compiledParserGrammar(input);
 }
 
 const addToTable = (t, i) => {
