@@ -429,55 +429,32 @@ function pegc(g) {
     const ostkleave = () => ostk.pop();
     const ostkpush = (t) => ostkcurr().push(t);
 
-    class L {}
-    class K { constructor(n) { this.n = n; } };
+    class L {}                  // Just a Marker for list values
 
-    ostkenter();
+    ostkenter();                // Init output stack
 
-    const stk = [result];
+    const stk = [result];       // Init processing stack
+
     while (stk.length > 0) {
       const e = stk.pop();
-      if (e === null) {
-        ostkpush(e);
-      } else if (e.key) {
-        ostkenter();
-
-        // Signal we'll put a Key in the processing stack
-        stk.push(new K(e.key));
+      if (e === undefined)      // Semantic Action didn't return
+        continue;
+      else if (e === null)      // Matched without moving cursor
+        continue;
+      else if (typeof e === 'function')
+        stk.push(e());
+      else if (e.key) {
         const action = actions[e.key];
-        const value = action ? action(e.key, e.value) : e.value;
-
-        if (consp(value)) {
-          ostkenter();
-          stk.push(new L);
-          value.reverse().forEach(x => stk.push(x));
-        } else {
-          stk.push(value);
-        }
-
-        // stk.push(new K(e.key));
-        // if (consp(e.value)) {
-        //   ostkenter();
-        //   stk.push(new L);
-        //   e.value.reverse().forEach(x => stk.push(x));
-        // } else {
-        //   stk.push(e.value);
-        // }
+        const value = action ? action(e.key, () => run(e.value, actions)) : e.value;
+        stk.push(value);
       } else if (consp(e)) {
         ostkenter();
         stk.push(new L);
         e.reverse().forEach(x => stk.push(x));
-      } else if (e instanceof K) {
-        ostkpush(cl(ostkleave()));
-      //   const action = actions[e.n];
-      //   const value = cl(ostkleave());
-      //   if (action) ostkpush(action(e.n, value));
-      //   else ostkpush([e.n, value]);
-      } else if (e instanceof L) {
+      } else if (e instanceof L)
         ostkpush(ostkleave());
-      } else {
+      else
         ostkpush(e);
-      }
     }
     return cl(ostkleave());
   };
