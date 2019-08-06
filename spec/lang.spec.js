@@ -228,7 +228,7 @@ describe("Translate", () => {
            ['Attribute',
             [['Load', 'print'],
              ['LoadAttr', '__doc__'],
-             ['MethodCall', ['LoadMethod', '__str__']],
+             ['MethodCall', [['LoadMethod', '__str__']]],
              ['LoadAttr', '__str__']]]]);
       });
 

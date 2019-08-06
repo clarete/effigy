@@ -8,64 +8,52 @@ const py37 = require('./arch/py37');
 const join = x => peg.consp(x) && x.flat().join('') || x;
 const toint = (x, b) => parseInt(join(x), b);
 const multi = x => peg.consp(x) && peg.consp(x[0]);
-const lift = (n, x) => peg.consp(x) && peg.consp(x[0]) ? [n, x] : x;
 const rename = ([,v], n) => [n, v];
 
 // Correct associativity for operators
-const leftAssoc = (_, x) => {
+const leftAssoc = (_, v) => {
+  const x = v();
   if (!multi(x)) return x;
   if (!multi(x[1])) {
-    console.log('THE X', x);
     const [left, [op, right]] = x;
     return ['BinOp', left, op, right];
   } else {
     const [head, ...[tail]] = x;
-    return tail.reduce((h, t) => ['BinOp', h, ...t], head);
+    return tail.reduce((h, t) => ['BinOp', h, ...t], head);;
   }
 };
 
 // TODO: right association (for ** operator)
 const rightAssoc = leftAssoc;
 
+const tag = (n, v) => {
+  const value = v();
+  return value ? [n, value] : value;
+};
+
 const parserActions = {
   // Minimal transformation for numbers & names
-  DEC: (_, x) => toint(x[0], 10),
-  HEX: (_, x) => toint(x[0], 16),
-  BIN: (_, x) => toint(join(x[0]).replace('0b', ''), 2),
-  Identifier: (n, x) => ["Load", join(x[0])],
-  // We'll take their value the way it is
-  Expression: (_, x) => x,
-  Primary: (_, x) => x,
-  CallParams: (_, x) => x,
-  PLUS: (_, x) => x,
-  MINUS: (_, x) => x,
-  STAR: (_, x) => x,
-  SLASH: (_, x) => x,
-  POWER: (_, x) => x,
-  MOD: (_, x) => x,
-  EQ: (_, x) => x,
-  NEQ: (_, x) => x,
-  LT: (_, x) => x,
-  GT: (_, x) => x,
-  LTE: (_, x) => x,
-  GTE: (_, x) => x,
-  RSHIFT: (_, x) => x,
-  LSHIFT: (_, x) => x,
-  BAND: (_, x) => x,
-  BOR: (_, x) => x,
-  BXOR: (_, x) => x,
-  // Not relevant if captured single result
-  Params: (n, x) => {
-    // Don't allow returning [Params, null]
-    if (!multi(x) && x === null) return [n];
-    return [n, x];
-  },
+  DEC: (_, x) => toint(x(), 10),
+  HEX: (_, x) => toint(x(), 16),
+  BIN: (_, x) => toint(join(x()).replace('0b', ''), 2),
+  Identifier: (n, x) => ["Load", join(x())],
+  // Things we want tagged
+  Module: tag,
+  Code: tag,
+  Statement: tag,
+  Number: tag,
+  Value: tag,
+  Call: tag,
+  Lambda: tag,
+  Params: tag,
+  Param: tag,
   // Rename
-  Param: (_, x) => rename(x, 'Param'),
+  Param: (_, x) => rename(x(), 'Param'),
   // Omit unary wrapper if it's not an unary operator
   Unary: (n, x) => {
-    if (UN_OP_MAP[x[0]]) return [n, x];
-    return x;
+    const value = x();
+    if (UN_OP_MAP[value[0]]) return [n, value];
+    return value;
   },
   // Associativity of binary operators
   BitLogical: leftAssoc,
@@ -75,7 +63,8 @@ const parserActions = {
   Factor: leftAssoc,
   Power: rightAssoc,
   // Attribute Access/method call
-  Attribute: (n, x) => {
+  Attribute: (n, v) => {
+    const x = v();
     if (!multi(x)) return x;
     let head, tail;
     if (multi(x[1])) { ([head, ...[tail]] = x); }
@@ -94,13 +83,13 @@ const parserActions = {
   // Move variable name after expression and add a `Store' node
   // instead of keeping the original `Identifier'.
   Assignment: (n, x) => {
-    const [identifier, expression] = x;
+    const [identifier, expression] = x();
     return [n, [expression, rename(identifier, "Store")]];
   },
   // Lexical Assignment: Rename top node to just assignment & rename
   // store instruction to storeLex
   LexAssignment: (n, x) => {
-    const [identifier, expression] = x;
+    const [identifier, expression] = x();
     return ['Assignment', [expression, rename(identifier, "StoreLex")]];
   },
 };
@@ -146,14 +135,8 @@ function dummyAssembler() {
   const emit = (op, arg) => curr()
     .instructions
     .push(arg !== undefined ? [op, arg] : [op]);
-  // -- WAT
-  const backtrack = (f) => {
-    const copy = curr().instructions.slice();
-    try { return f(); }
-    catch (e) { curr().instructions = copy; throw e; }
-  };
   // -- Basic interface for assembler
-  return { enter, leave, emit, attr, backtrack };
+  return { enter, leave, emit, attr };
 }
 
 const UN_OP_MAP = {
@@ -176,8 +159,8 @@ const BIN_OP_MAP = {
    '^': 'binary-xor',
 };
 
-const translateGrammarSource =
-  fs.readFileSync(path.resolve('lang.tr')).toString();
+const compiledTranslatorGrammar = peg
+  .pegc(fs.readFileSync(path.resolve('lang.tr')).toString());
 
 function translateScope(tree) {
   let i = 0;
@@ -220,9 +203,7 @@ function translateScope(tree) {
     },
     Lambda: (_, x) => {
       entersym('lambda');
-      let v;
-      try { v = x(); }
-      catch (e) { leavesym(); throw e; }
+      const v = x();
       const s = leavesym();
       currstk().children.push(s);
       map[i++] = s;
@@ -241,7 +222,9 @@ function translateScope(tree) {
 
   map[i++] = null;
   entersym('module');
-  const outTree = peg.pegc(translateGrammarSource, symActions).matchl(tree, peg.delayedAction0);
+
+  const g = compiledTranslatorGrammar.bindl(symActions);
+  const outTree = g(tree);
   const scope = map[0] = leavesym();
   // The following code evolved from the algorithm in the Tailbiter
   // article from Darius Bacon [0] with the root variable added to
@@ -294,7 +277,7 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
   // 3.1. Traverse tree once to build the scope
   const [symtable, scopedTree] = translateScope(tree);
   // 3.2. Translation Actions
-  const { enter, leave, emit, attr, backtrack } = assembler;
+  const { enter, leave, emit, attr } = assembler;
   // -- Mutators for adding new items to tables
   const newConst = c => addToTable(attr('constants'), c);
   const newName = c => addToTable(attr('names'), c);
@@ -349,18 +332,9 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
   };
   // -- Emit instructions for more involved operations
   const call = (n, c) => {
-    if (peg.consp(c)) {
-      const [, args] = c;
-      // More than one parameter
-      if (peg.consp(args) && peg.consp(args[0]))
-        emit(`call-${n}`, args.length);
-      // Single Param
-      else emit(`call-${n}`, 1);
-    } else {
-      // No Params
-      emit(`call-${n}`, 0);
-    }
-    return c;
+    const [_, [, { val, len }]] = c;
+    emit(`call-${n}`, len);
+    return val;
   };
   const scopeId = (visit) => {
     const value = visit();
@@ -369,19 +343,14 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
   };
   const lambdaDef = visit => {
     enter({ co_name: '<lambda>' });
-    let v;
-    try { v = visit(); }
-    catch (e) { leave(); throw e; }
+    const v = visit();
     // Need to acquire the scope & update tables before popping the
     // current code object
     const scope = getscope();
     scope.free.forEach(x => addToTable(attr('freevars'), x));
     scope.cell.forEach(x => addToTable(attr('cellvars'), x));
     // Update argument count
-    const params = v[1][1];
-    attr('argcount', peg.consp(params[1])
-      ? params[1].length
-      : params.length - 1);
+    attr('argcount', v[1][1].len);
     // Update number of local variables
     attr('nlocals', attr('varnames').length);
     // End the function
@@ -411,27 +380,39 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
   };
   const actions = {
     Module: (_, x) => module(x),
-    Expression: (n, x) => [n, backtrack(x)],
     ScopeId: (_, x, s) => scopeId(x, s),
-    Param: (_, x) => newVarName(x()[1]),
-    Load: (_, x) => load(x()[1]),
+    Load: (_, x) => { const v = x(); load(v[1]); return v; },
     LoadMethod: (_, x) => loadMethod(x()[1]),
-    Store: (_, x) => store(x()[1]),
-    StoreLex: (_, x) => store(x()[1]),
-    Call: (_, x) => call('function', x()[1]),
-    MethodCall: (_, x) => call('method', x()[1]),
-    CallParams: (_, x) => x(),
+    Store: (_, x) => { const v = x(); store(v[1]); return v; },
+    StoreLex: (_, x) => { const v = x(); store(v[1]); return v; },
+
+    // Call Site Rule application
+    Call: (_, x) => call('function', x()),
+    MethodCall: (_, x) => call('method', x()),
+    CallPMult: (_, x) => { const val = x(); return { val, len: val.length }; },
+    CallPOne: (_, x) => ({ val: x(), len: 1 }),
+    CallPNone: (_, x) => ({ val: x(), len: 0 }),
+
+    // Parameter Rule application
+    Param: (_, x) => newVarName(x()[1]),
+    ParamsMult: (_, x) => { const val = x(); return { val, len: val.length }; },
+    ParamsOne: (_, x) => ({ val: x(), len: 1 }),
+    ParamsNone: (_, x) => ({ val: x(), len: 0 }),
+
+    // Lambda Definition
     Lambda: (_, x, s) => lambdaDef(x, s),
     Number: (_, x) => loadConst(x()[1]),
     LoadAttr: (_, x) => loadAttr(x()[1]),
-    Atom: (_, x) => x(),
-    BinOp: (_, x) => emit(BIN_OP_MAP[x()[2]]),
+    BinOp: (_, x) => {
+      const value = x();
+      emit(BIN_OP_MAP[value[2]]);
+      return value;
+    },
     Unary: (_, x) => emit(UN_OP_MAP[x()[1][0]]),
-    Primary: (_, x) => x()[1],
-    Value: (_, x) => x()[1],
   };
   // 3.2. Traverse parse tree with transformation grammar
-  return peg.pegc(translateGrammarSource, actions).matchl(scopedTree, peg.delayedAction0);
+  const g = compiledTranslatorGrammar.bindl(actions);
+  return g(scopedTree);
 }
 
 function translateFile(filename) {
