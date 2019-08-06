@@ -413,15 +413,6 @@ function pegc(g) {
     return actionfn(start, matchexpr(G[start]));
   };
 
-  const im = (e, v) => {
-    return [Symbol.keyFor(e), v];
-  };
-
-  const ev = (e, value) => {
-    const key = Symbol.keyFor(e);
-    return { key, value };
-  };
-
   const run = (result, actions) => {
     const ostk = [];
     const ostkcurr  = () => ostk[ostk.length-1];
@@ -458,14 +449,16 @@ function pegc(g) {
     }
     return cl(ostkleave());
   };
-
+  // Functions for wrapping up calls to Non-Terminals
+  const nameAndValueTuple = (e, v) => [Symbol.keyFor(e), v];
+  const nameAndValueObject = (e, value) => ({ key: Symbol.keyFor(e), value });
   return {
-    match: (s, af=im) => match(scan(s), af),
-    matchl: (l, af=im) => match(scanl([l]), af),
+    match: (s, af=nameAndValueTuple) => match(scan(s), af),
+    matchl: (l, af=nameAndValueTuple) => match(scanl([l]), af),
     bind: actions => source =>
-      run(match(scan(source), ev), actions),
+      run(match(scan(source), nameAndValueObject), actions),
     bindl: actions => source =>
-      run(match(scanl([source]), ev), actions),
+      run(match(scanl([source]), nameAndValueObject), actions),
   };
 }
 
