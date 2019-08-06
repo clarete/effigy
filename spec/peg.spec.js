@@ -25,10 +25,9 @@ describe('Semantic Actions', () => {
       ' _ <- [ \t\n\r]*'
     );
     const r = c.bind({
-      I: (_, x) => parseInt(j(x), 10),
-      L: (_, x) => x,
+      I: (_, x) => parseInt(j(x()), 10),
     });
-    console.log(r(" 100 , 200 "));
+    expect(r(" 100 , 200 ")).toEqual([100, 200]);
   });
 });
 
@@ -39,8 +38,7 @@ describe("List matcher", () => {
     // Actions to be triggered by the non terminals of the parsing
     // grammar
     const parseActions = {
-      N: (_, x) => parseInt(fj(x), 10),
-      T: (_, x) => x,
+      N: (_, x) => parseInt(fj(x()), 10),
       P: (_, x) => '+',
     };
     // Grammar for parsing something that resembles a calculator
@@ -120,7 +118,7 @@ describe("List matcher", () => {
 
   it("should parse atom inside list", () => {
     const g = pegc('S <- { "A" }');
-    const r = g.bindl({ S: (_, x) => `y${x}y` });
+    const r = g.bindl({ S: (_, x) => `y${x()}y` });
     expect(r(["A"])).toBe("yAy");
   });
 });
@@ -134,12 +132,12 @@ describe("input parser", () => {
         'U <- "c" V  \n' +
         'V <- "d"+   \n'
       );
-      const _x = (e, x) => [e + '.foo', x];
+      const _x = (e, x) => [e + '.foo', x()];
       const aa = { S: _x, T: _x, U: _x, V: _x };
       gg.bind(aa)("abbbcdcdd");
 
       const g = pegc("Num <- [0-9]+");
-      const a = { Num: (_, x) => parseInt((Array.isArray(x) && x.join('') || x)) };
+      const a = { Num: (_, x) => parseInt(x(), 10) };
       const r = g.bind(a);
       const c = r("1");
       expect(c).toBe(1);
