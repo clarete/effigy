@@ -419,11 +419,7 @@ function pegc(g) {
 
   const ev = (e, value) => {
     const key = Symbol.keyFor(e);
-    return {
-      __annoying__: true,
-      key,
-      value,
-    };
+    return { key, value };
   };
 
   const run = (result, actions) => {
@@ -443,25 +439,40 @@ function pegc(g) {
       const e = stk.pop();
       if (e === null) {
         ostkpush(e);
-      } else if (e.__annoying__) {
+      } else if (e.key) {
         ostkenter();
+
+        // Signal we'll put a Key in the processing stack
         stk.push(new K(e.key));
-        if (consp(e.value)) {
+        const action = actions[e.key];
+        const value = action ? action(e.key, e.value) : e.value;
+
+        if (consp(value)) {
           ostkenter();
           stk.push(new L);
-          e.value.reverse().forEach(x => stk.push(x));
+          value.reverse().forEach(x => stk.push(x));
         } else {
-          stk.push(e.value);
+          stk.push(value);
         }
+
+        // stk.push(new K(e.key));
+        // if (consp(e.value)) {
+        //   ostkenter();
+        //   stk.push(new L);
+        //   e.value.reverse().forEach(x => stk.push(x));
+        // } else {
+        //   stk.push(e.value);
+        // }
       } else if (consp(e)) {
         ostkenter();
         stk.push(new L);
         e.reverse().forEach(x => stk.push(x));
       } else if (e instanceof K) {
-        const action = actions[e.n];
-        const value = cl(ostkleave());
-        if (action) ostkpush(action(e.n, value));
-        else ostkpush([e.n, value]);
+        ostkpush(cl(ostkleave()));
+      //   const action = actions[e.n];
+      //   const value = cl(ostkleave());
+      //   if (action) ostkpush(action(e.n, value));
+      //   else ostkpush([e.n, value]);
       } else if (e instanceof L) {
         ostkpush(ostkleave());
       } else {

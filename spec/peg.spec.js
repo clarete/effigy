@@ -15,6 +15,23 @@ const {
   lst,
 } = require("../peg");
 
+describe('Semantic Actions', () => {
+  it("should something", () => {
+    const j = x => Array.isArray(x) && x.join('') || x;
+    const c = pegc(
+      ' L <- _ I (_S I)*   \n' +
+      ' I <- [0-9]+ _      \n' +
+      '_S <- "," _         \n' +
+      ' _ <- [ \t\n\r]*'
+    );
+    const r = c.bind({
+      I: (_, x) => parseInt(j(x), 10),
+      L: (_, x) => x,
+    });
+    console.log(r(" 100 , 200 "));
+  });
+});
+
 describe("List matcher", () => {
   it("should work in tandem with char matcher", () => {
     // Join chars together if they're an array
