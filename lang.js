@@ -47,6 +47,12 @@ const parserActions = {
   Lambda: tag,
   Params: tag,
   Param: tag,
+  // Just need to pop the name of the function off the `Load` node
+  Function: (n, x) => {
+    const value = x();
+    value[0] = value[0][1];
+    return [n, value];
+  },
   // Rename
   Param: (_, x) => rename(x(), 'Param'),
   // Omit unary wrapper if it's not an unary operator
@@ -178,6 +184,15 @@ function translateScope(tree) {
   const entersym = node => symstk.push(newsymtable({ node }));
   const leavesym = () => symstk.pop();
 
+  const _func = (n, x) => {
+    entersym(n.toLowerCase());
+    const v = x();
+    const s = leavesym();
+    currstk().children.push(s);
+    map[i++] = s;
+    v[1].unshift(["ScopeId", i-1]);
+    return v;
+  };
   const symActions = {
     Atom: (_, x) => x(),
     Param: (_, x) => {
@@ -201,15 +216,8 @@ function translateScope(tree) {
       addToTable(currstk().uses, value[1]);
       return value;
     },
-    Lambda: (_, x) => {
-      entersym('lambda');
-      const v = x();
-      const s = leavesym();
-      currstk().children.push(s);
-      map[i++] = s;
-      v[1].unshift(["ScopeId", i-1]);
-      return v;
-    },
+    Lambda: (n, x) => _func(n, x),
+    Function: (n, x) => _func(n, x),
     Attribute: (n, x) => {
       // Flatten output of + operator :/
       const v = x();
@@ -343,16 +351,20 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
     pushscope(value[1]);
     return value;
   };
-  const lambdaDef = visit => {
+  const func = (n, visit) => {
     enter({ co_name: '<lambda>' });
     const v = visit();
+    const isAnon = n === 'Lambda';
+    // Slightly different tree shape for lambdas & functions
+    const name = isAnon ? '<lambda>' : v[1][1];
+    const argcount = isAnon ? v[1][1].len : v[1][2].len;
     // Need to acquire the scope & update tables before popping the
     // current code object
     const scope = getscope();
     scope.free.forEach(x => addToTable(attr('freevars'), x));
     scope.cell.forEach(x => addToTable(attr('cellvars'), x));
     // Update argument count
-    attr('argcount', v[1][1].len);
+    attr('argcount', argcount);
     // Update number of local variables
     attr('nlocals', attr('varnames').length);
     // End the function
@@ -369,8 +381,9 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
       emit('build-tuple', scope.free.length);
     }
     loadConst(code);
-    loadConst('<lambda>');
+    loadConst(name);
     emit('make-function', flags);
+    if (!isAnon) store(name);
     return v;
   };
   const module = visit => {
@@ -401,8 +414,11 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
     ParamsOne: (_, x) => ({ val: x(), len: 1 }),
     ParamsNone: (_, x) => ({ val: x(), len: 0 }),
 
-    // Lambda Definition
-    Lambda: (_, x, s) => lambdaDef(x, s),
+    // Callable Definition
+    Lambda: (n, x) => func(n, x),
+    Function: (n, x) => func(n, x),
+
+    // Values & Expressions
     Number: (_, x) => loadConst(x()[1]),
     LoadAttr: (_, x) => loadAttr(x()[1]),
     BinOp: (_, x) => {

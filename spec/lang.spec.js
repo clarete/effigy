@@ -343,8 +343,8 @@ describe("Translate", () => {
       });
     });
 
-    describe("Lambda", () => {
-      it("with single expression on the body", () => {
+    describe("Callables", () => {
+      it("lambda with single expression on the body", () => {
         const tree = parse('fn() 1');
         const code = translate(tree);
         expect(code).toEqual({
@@ -377,7 +377,7 @@ describe("Translate", () => {
         });
       });
 
-      it("should support multiple parameters in fn definition", () => {
+      it("should support lambdas with multiple parameters in fn definition", () => {
         const tree = parse('fn(x, y) 1');
         const code = translate(tree);
 
@@ -405,6 +405,41 @@ describe("Translate", () => {
             ['load-const', 0],
             ['load-const', 1],
             ['make-function', 0],
+            ['load-const', 2],
+            ['return-value'],
+          ],
+        });
+      });
+
+      it("should support function with single expression on the body", () => {
+        const tree = parse('fn f() 1');
+        const code = translate(tree);
+
+        expect(code).toEqual({
+          nlocals: 0,
+          argcount: 0,
+          constants: [{
+            nlocals: 0,
+            argcount: 0,
+            constants: [1],
+            names: [],
+            varnames: [],
+            freevars: [],
+            cellvars: [],
+            instructions: [
+              ['load-const', 0],
+              ['return-value'],
+            ],
+          }, 'f', null],
+          names: ['f'],
+          varnames: [],
+          freevars: [],
+          cellvars: [],
+          instructions: [
+            ['load-const', 0],
+            ['load-const', 1],
+            ['make-function', 0],
+            ['store-name', 0],
             ['load-const', 2],
             ['return-value'],
           ],

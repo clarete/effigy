@@ -7,7 +7,7 @@ Code       <- { "Code" { (Statement / Expression)+ } }
 
 Statement  <- { "Statement" Assignment }
 Assignment <- { "Assignment" { Expression (Store / StoreLex) } }
-Expression <- Attribute / BinOp / Call / Lambda / Load / Unary / Value
+Expression <- Attribute / BinOp / Call / Lambda / Function / Load / Unary / Value
 
 BinOp      <- { "BinOp" Expression Atom Expression }
 Unary      <- { "Unary" { Atom Expression } }
@@ -19,6 +19,8 @@ MethodCall <- { "MethodCall" { LoadMethod CallParams } }
 ScopeId    <- { "ScopeId" Atom }
 Lambda     <- { "Lambda" { Params Code } }
             / { "Lambda" { ScopeId Params Code } }
+Function   <- { "Function" { Atom Params Code } }
+            / { "Function" { ScopeId Atom Params Code } }
 
 # Callable Parameter rules
 Params     <- ParamsMult / ParamsOne / ParamsNone

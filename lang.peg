@@ -19,6 +19,7 @@ Attr            <- Call / Primary
 Call            <- Primary CallParams
 Primary         <- _PROP Expression _PRCL
                  / Value
+                 / Function
                  / Lambda
                  / Identifier
 
@@ -32,7 +33,7 @@ Param           <- Identifier (_ASSIGN Expression)?
 CallParams      <- _PROP (Expression (_COMA Expression)*)? _PRCL
 
 # Statements
-Statement       <- ReturnStm / WhileStm / ForStm / IfStm / Function / Assignment / LexAssignment
+Statement       <- ReturnStm / WhileStm / ForStm / IfStm / Assignment / LexAssignment
 Assignment      <- Identifier _ASSIGN Expression
 LexAssignment   <- _LET Identifier _ASSIGN Expression
 
