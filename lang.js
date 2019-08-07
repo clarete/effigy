@@ -28,7 +28,7 @@ const rightAssoc = leftAssoc;
 
 const tag = (n, v) => {
   const value = v();
-  return value ? [n, value] : value;
+  return value !== undefined ? [n, value] : value;
 };
 
 const parserActions = {

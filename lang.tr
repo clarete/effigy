@@ -24,11 +24,11 @@ Lambda     <- { "Lambda" { Params Code } }
 Params     <- ParamsMult / ParamsOne / ParamsNone
 ParamsMult <- { "Params" { Param+ } }
 ParamsOne  <- { "Params" Param }
-ParamsNone <-
+ParamsNone <- { "Params" }
 Param      <- { "Param" Atom }
 
 # Call Site rules
-Call       <- { "Call" { Load CallParams } }
+Call       <- { "Call" { Expression CallParams } }
 CallParams <- CallPMult / CallPOne / CallPNone
 CallPMult  <- { Expression+ }
 CallPOne   <- Expression
