@@ -119,6 +119,31 @@ describe("Translate", () => {
           ],
         });
       });
+
+      it("should work with expressions as params", () => {
+        const tree = parse(`print(f()+4)`);
+        const code = translate(tree);
+
+        expect(code).toEqual({
+          nlocals: 0,
+          argcount: 0,
+          constants: [4, null],
+          names: ['print', 'f'],
+          varnames: [],
+          freevars: [],
+          cellvars: [],
+          instructions: [
+            ['load-name', 0],
+            ['load-name', 1],
+            ['call-function', 0],
+            ['load-const', 0],
+            ['binary-add'],
+            ['call-function', 1],
+            ['load-const', 1],
+            ['return-value'],
+          ],
+        });
+      });
     });                         // Call
 
     describe("Unary", () => {
@@ -351,7 +376,41 @@ describe("Translate", () => {
           ],
         });
       });
-    });
+
+      it("should support multiple parameters in fn definition", () => {
+        const tree = parse('fn(x, y) 1');
+        const code = translate(tree);
+
+        expect(code).toEqual({
+          nlocals: 0,
+          argcount: 0,
+          constants: [{
+            nlocals: 2,
+            argcount: 2,
+            constants: [1],
+            names: [],
+            varnames: ['x', 'y'],
+            freevars: [],
+            cellvars: [],
+            instructions: [
+              ['load-const', 0],
+              ['return-value'],
+            ],
+          }, '<lambda>', null],
+          names: [],
+          varnames: [],
+          freevars: [],
+          cellvars: [],
+          instructions: [
+            ['load-const', 0],
+            ['load-const', 1],
+            ['make-function', 0],
+            ['load-const', 2],
+            ['return-value'],
+          ],
+        });
+      });
+    });                         // Lambda
 
     describe('Nested Scopes', () => {
       it("should use global if no enclosing scope redefines name", () => {

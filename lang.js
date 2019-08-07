@@ -334,7 +334,9 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
   const call = (n, c) => {
     const [_, [, { val, len }]] = c;
     emit(`call-${n}`, len);
-    return val;
+    // Must return something truthy to avoid changing shape of subtree
+    // needed by `BinOp' as a parent node
+    return val || true;
   };
   const scopeId = (visit) => {
     const value = visit();

@@ -27,7 +27,7 @@ Lambda     <- { "Lambda" { Params Code } }
             / { "Lambda" { ScopeId Params Code } }
 
 # Callable Parameter rules
-Params     <- ParamsMulti / ParamsOne / ParamsNone
+Params     <- ParamsMult / ParamsOne / ParamsNone
 ParamsMult <- { "Params" { Param+ } }
 ParamsOne  <- { "Params" Param }
 ParamsNone <-
