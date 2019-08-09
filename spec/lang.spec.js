@@ -1,4 +1,4 @@
-const { parse, translate, translateScope } = require('../lang');
+const { coObj, parse, translate, translateScope } = require('../lang');
 
 describe("Scope", () => {
   it("should generate LOAD_GLOBAL when variable is declared in the module scope", () => {
@@ -35,20 +35,14 @@ describe("Translate", () => {
           const tree = parse("123");
           const code = translate(tree);
 
-          expect(code).toEqual({
-            nlocals: 0,
-            argcount: 0,
+          expect(code).toEqual(coObj({
             constants: [123, null],
-            names: [],
-            varnames: [],
-            freevars: [],
-            cellvars: [],
             instructions: [
               ['load-const', 0],
               ['load-const', 1],
               ['return-value'],
             ],
-          });
+          }));
         });
       });
 
@@ -57,20 +51,14 @@ describe("Translate", () => {
           const tree = parse('"oi"');
           const code = translate(tree);
 
-          expect(code).toEqual({
-            nlocals: 0,
-            argcount: 0,
+          expect(code).toEqual(coObj({
             constants: ['oi', null],
-            names: [],
-            varnames: [],
-            freevars: [],
-            cellvars: [],
             instructions: [
               ['load-const', 0],
               ['load-const', 1],
               ['return-value'],
             ],
-          });
+          }));
         });
       });
     });                         // Values
@@ -79,35 +67,25 @@ describe("Translate", () => {
         const tree = parse("print()");
         const code = translate(tree);
 
-        expect(code).toEqual({
-          nlocals: 0,
-          argcount: 0,
+        expect(code).toEqual(coObj({
           constants: [null],
           names: ['print'],
-          varnames: [],
-          freevars: [],
-          cellvars: [],
           instructions: [
             ['load-name', 0],
             ['call-function', 0],
             ['load-const', 0],
             ['return-value'],
           ],
-        });
+        }));
       });
 
       it("with one number parameter", () => {
         const tree = parse("print(42)");
         const code = translate(tree);
 
-        expect(code).toEqual({
-          nlocals: 0,
-          argcount: 0,
+        expect(code).toEqual(coObj({
           constants: [42, null],
           names: ['print'],
-          varnames: [],
-          freevars: [],
-          cellvars: [],
           instructions: [
             ['load-name', 0],
             ['load-const', 0],
@@ -115,21 +93,16 @@ describe("Translate", () => {
             ['load-const', 1],
             ['return-value'],
           ],
-        });
+        }));
       });
 
       it("with two number parameter", () => {
         const tree = parse("print(42, 43)");
         const code = translate(tree);
 
-        expect(code).toEqual({
-          nlocals: 0,
-          argcount: 0,
+        expect(code).toEqual(coObj({
           constants: [42, 43, null],
           names: ['print'],
-          varnames: [],
-          freevars: [],
-          cellvars: [],
           instructions: [
             ['load-name', 0],
             ['load-const', 0],
@@ -138,21 +111,16 @@ describe("Translate", () => {
             ['load-const', 2],
             ['return-value'],
           ],
-        });
+        }));
       });
 
       it("should execute two fun calls in a row", () => {
         const tree = parse(`print(1); print(2)`);
         const code = translate(tree);
 
-        expect(code).toEqual({
-          nlocals: 0,
-          argcount: 0,
+        expect(code).toEqual(coObj({
           constants: [1, 2, null],
           names: ['print'],
-          varnames: [],
-          freevars: [],
-          cellvars: [],
           instructions: [
             ['load-name', 0],
             ['load-const', 0],
@@ -163,21 +131,16 @@ describe("Translate", () => {
             ['load-const', 2],
             ['return-value'],
           ],
-        });
+        }));
       });
 
       it("should work with expressions as params", () => {
         const tree = parse(`print(f()+4)`);
         const code = translate(tree);
 
-        expect(code).toEqual({
-          nlocals: 0,
-          argcount: 0,
+        expect(code).toEqual(coObj({
           constants: [4, null],
           names: ['print', 'f'],
-          varnames: [],
-          freevars: [],
-          cellvars: [],
           instructions: [
             ['load-name', 0],
             ['load-name', 1],
@@ -188,7 +151,7 @@ describe("Translate", () => {
             ['load-const', 1],
             ['return-value'],
           ],
-        });
+        }));
       });
     });                         // Call
 
@@ -197,21 +160,16 @@ describe("Translate", () => {
         const tree = parse('-a');
         const code = translate(tree);
 
-        expect(code).toEqual({
-          nlocals: 0,
-          argcount: 0,
-          constants: [ null ],
+        expect(code).toEqual(coObj({
+          constants: [null],
           names: ['a'],
-          varnames: [],
-          freevars: [],
-          cellvars: [],
           instructions: [
             ['load-name', 0],
             ['unary-negative'],
             ['load-const', 0],
             ['return-value'],
           ],
-        });
+        }));
       });
     });                         // Unary
 
@@ -220,14 +178,8 @@ describe("Translate", () => {
         const tree = parse('2 + 3 * 4');
         const code = translate(tree);
 
-        expect(code).toEqual({
-          nlocals: 0,
-          argcount: 0,
+        expect(code).toEqual(coObj({
           constants: [2, 3, 4, null],
-          names: [],
-          varnames: [],
-          freevars: [],
-          cellvars: [],
           instructions: [
             ['load-const', 0],
             ['load-const', 1],
@@ -237,20 +189,15 @@ describe("Translate", () => {
             ['load-const', 3],
             ['return-value'],
           ],
-        });
+        }));
       });
       it("should work within function calls", () => {
         const tree = parse('print(2 + 3)');
         const code = translate(tree);
 
-        expect(code).toEqual({
-          nlocals: 0,
-          argcount: 0,
+        expect(code).toEqual(coObj({
           constants: [2, 3, null],
           names: ['print'],
-          varnames: [],
-          freevars: [],
-          cellvars: [],
           instructions: [
             ['load-name', 0],
             ['load-const', 0],
@@ -260,20 +207,14 @@ describe("Translate", () => {
             ['load-const', 2],
             ['return-value'],
           ],
-        });
+        }));
       });
       it("should provide bit shifting operators", () => {
         const tree = parse('2 >> 3');
         const code = translate(tree);
 
-        expect(code).toEqual({
-          nlocals: 0,
-          argcount: 0,
+        expect(code).toEqual(coObj({
           constants: [2, 3, null],
-          names: [],
-          varnames: [],
-          freevars: [],
-          cellvars: [],
           instructions: [
             ['load-const', 0],
             ['load-const', 1],
@@ -281,7 +222,7 @@ describe("Translate", () => {
             ['load-const', 2],
             ['return-value'],
           ],
-        });
+        }));
       });
     });                         // BinOp
 
@@ -324,35 +265,25 @@ describe("Translate", () => {
         const tree = parse('print.__doc__');
         const code = translate(tree);
 
-        expect(code).toEqual({
-          nlocals: 0,
-          argcount: 0,
+        expect(code).toEqual(coObj({
           constants: [null],
           names: ['print', '__doc__'],
-          varnames: [],
-          freevars: [],
-          cellvars: [],
           instructions: [
             ['load-name', 0],
             ['load-attr', 1],
             ['load-const', 0],
             ['return-value'],
           ],
-        });
+        }));
       });
 
       it("should provide method calling", () => {
         const tree = parse('print.__doc__.__str__()');
         const code = translate(tree);
 
-        expect(code).toEqual({
-          nlocals: 0,
-          argcount: 0,
+        expect(code).toEqual(coObj({
           constants: [null],
           names: ['print', '__doc__', '__str__'],
-          varnames: [],
-          freevars: [],
-          cellvars: [],
           instructions: [
             ['load-name', 0],
             ['load-attr', 1],
@@ -361,21 +292,16 @@ describe("Translate", () => {
             ['load-const', 0],
             ['return-value'],
           ],
-        });
+        }));
       });
 
       it("should provide method calling with parameters", () => {
         const tree = parse('object.__doc__.zfill(20)');
         const code = translate(tree);
 
-        expect(code).toEqual({
-          nlocals: 0,
-          argcount: 0,
+        expect(code).toEqual(coObj({
           constants: [20, null],
           names: ['object', '__doc__', 'zfill'],
-          varnames: [],
-          freevars: [],
-          cellvars: [],
           instructions: [
             ['load-name', 0],
             ['load-attr', 1],
@@ -385,7 +311,7 @@ describe("Translate", () => {
             ['load-const', 1],
             ['return-value'],
           ],
-        });
+        }));
       });
     });
 
@@ -393,26 +319,14 @@ describe("Translate", () => {
       it("lambda with single expression on the body", () => {
         const tree = parse('fn() 1');
         const code = translate(tree);
-        expect(code).toEqual({
-          nlocals: 0,
-          argcount: 0,
-          constants: [{
-            nlocals: 0,
-            argcount: 0,
+        expect(code).toEqual(coObj({
+          constants: [coObj({
             constants: [1],
-            names: [],
-            varnames: [],
-            freevars: [],
-            cellvars: [],
             instructions: [
               ['load-const', 0],
               ['return-value'],
             ],
-          }, '<lambda>', null],
-          names: [],
-          varnames: [],
-          freevars: [],
-          cellvars: [],
+          }), '<lambda>', null],
           instructions: [
             ['load-const', 0],
             ['load-const', 1],
@@ -420,33 +334,24 @@ describe("Translate", () => {
             ['load-const', 2],
             ['return-value'],
           ],
-        });
+        }));
       });
 
       it("should support lambdas with multiple parameters in fn definition", () => {
         const tree = parse('fn(x, y) 1');
         const code = translate(tree);
 
-        expect(code).toEqual({
-          nlocals: 0,
-          argcount: 0,
-          constants: [{
+        expect(code).toEqual(coObj({
+          constants: [coObj({
             nlocals: 2,
             argcount: 2,
             constants: [1],
-            names: [],
             varnames: ['x', 'y'],
-            freevars: [],
-            cellvars: [],
             instructions: [
               ['load-const', 0],
               ['return-value'],
             ],
-          }, '<lambda>', null],
-          names: [],
-          varnames: [],
-          freevars: [],
-          cellvars: [],
+          }), '<lambda>', null],
           instructions: [
             ['load-const', 0],
             ['load-const', 1],
@@ -454,33 +359,22 @@ describe("Translate", () => {
             ['load-const', 2],
             ['return-value'],
           ],
-        });
+        }));
       });
 
       it("should support function with single expression on the body", () => {
         const tree = parse('fn f() 1');
         const code = translate(tree);
 
-        expect(code).toEqual({
-          nlocals: 0,
-          argcount: 0,
-          constants: [{
-            nlocals: 0,
-            argcount: 0,
+        expect(code).toEqual(coObj({
+          constants: [coObj({
             constants: [1],
-            names: [],
-            varnames: [],
-            freevars: [],
-            cellvars: [],
             instructions: [
               ['load-const', 0],
               ['return-value'],
             ],
-          }, 'f', null],
+          }), 'f', null],
           names: ['f'],
-          varnames: [],
-          freevars: [],
-          cellvars: [],
           instructions: [
             ['load-const', 0],
             ['load-const', 1],
@@ -489,7 +383,7 @@ describe("Translate", () => {
             ['load-const', 2],
             ['return-value'],
           ],
-        });
+        }));
       });
     });                         // Lambda
 
@@ -502,19 +396,15 @@ describe("Translate", () => {
         const tree = parse(`a = 1; f = fn(p) p+a+1; f(1) # 2\n`);
         const code = translate(tree);
 
-        expect(code).toEqual({
-          nlocals: 0,
-          argcount: 0,
+        expect(code).toEqual(coObj({
           constants: [
             1,
-            {
+            coObj({
               nlocals: 1,
               argcount: 1,
               constants: [1],
               names: ['a'],
               varnames: ['p'],
-              freevars: [],
-              cellvars: [],
               instructions: [
                 ['load-fast', 0],
                 ['load-global', 0],
@@ -523,14 +413,11 @@ describe("Translate", () => {
                 ['binary-add'],
                 ['return-value'],
               ],
-            },
+            }),
             '<lambda>',
             null,
           ],
           names: ['a', 'f'],
-          varnames: [],
-          freevars: [],
-          cellvars: [],
           instructions: [
             ['load-const', 0],  // 1
             ['store-name', 0],  // a
@@ -546,7 +433,7 @@ describe("Translate", () => {
             ['load-const', 3],
             ['return-value'],
           ],
-        });
+        }));
       });
 
       it("should use store-fast for local names and arguments", () => {
@@ -555,26 +442,21 @@ describe("Translate", () => {
         const tree = parse(`fn(p) { a = p+1; a }`);
         const code = translate(tree);
 
-        expect(code).toEqual({
-          nlocals: 0,
-          argcount: 0,
-          constants: [{
+        expect(code).toEqual(coObj({
+          constants: [coObj({
             nlocals: 2,
             argcount: 1,
             constants: [1],
-            names: [],
             varnames: ['p', 'a'],
-            freevars: [],
-            cellvars: [],
             instructions: [
-              [ 'load-fast', 0 ],
-              [ 'load-const', 0 ],
-              [ 'binary-add' ],
-              [ 'store-fast', 1 ],
-              [ 'load-fast', 1 ],
-              [ 'return-value' ],
+              ['load-fast', 0],
+              ['load-const', 0],
+              ['binary-add'],
+              ['store-fast', 1],
+              ['load-fast', 1],
+              ['return-value'],
             ],
-          }, '<lambda>', null ],
+          }), '<lambda>', null ],
           names: [],
           varnames: [],
           freevars: [],
@@ -586,7 +468,7 @@ describe("Translate", () => {
             [ 'load-const', 2 ],
             [ 'return-value' ],
           ],
-        });
+        }));
       });
 
       it("with single parameter", () => {
@@ -600,36 +482,29 @@ print(f(1))      # 9
 `);
         const code = translate(tree);
 
-        expect(code).toEqual({
-          nlocals: 0,
-          argcount: 0,
+        expect(code).toEqual(coObj({
           constants: [
-            {
+            coObj({
               nlocals: 2,
               argcount: 1,
               constants: [
-                {
+                coObj({
                   nlocals: 1,
                   argcount: 1,
-                  constants: [],
-                  names: [],
                   varnames: ['y'],
                   freevars: ['p'],
-                  cellvars: [],
                   instructions: [
                     ['load-deref', 0], // p
                     ['load-fast', 0],  // y
                     ['binary-add'],
                     ['return-value'],
                   ],
-                },
+                }),
                 '<lambda>',
                 2,
                 1,
               ],
-              names: [],
               varnames: ['p', 'x'],
-              freevars: [],
               cellvars: ['p'],
               instructions: [
                 ['load-closure', 0],
@@ -653,15 +528,12 @@ print(f(1))      # 9
                 ['binary-add'],
                 ['return-value'],
               ],
-            },
+            }),
             '<lambda>',
             1,
             null,
           ],
           names: ['f', 'print'],
-          varnames: [],
-          freevars: [],
-          cellvars: [],
           instructions: [
             ['load-const', 0],    // Code object to be stored in 'f'
             ['load-const', 1],    // 'lambda'
@@ -677,7 +549,7 @@ print(f(1))      # 9
             ['load-const', 3],
             ['return-value'],
           ],
-        });
+        }));
       });
     });                         // Scopes
 
@@ -693,17 +565,14 @@ print(f()) # 2
       `);
       const code = translate(tree);
 
-      expect(code).toEqual({
+      expect(code).toEqual(coObj({
         constants: [
-          {
+          coObj({
             constants: [
               1,
-              {
-                constants: [],
-                names: [],
+              coObj({
                 varnames: ['v'],
                 freevars: ['x'],
-                cellvars: [],
                 nlocals: 1,
                 argcount: 1,
                 instructions: [
@@ -714,13 +583,10 @@ print(f()) # 2
                   ['load-deref', 0],
                   ['return-value' ],
                 ],
-              },
+              }),
               '<lambda>' ],
             nlocals: 1,
-            argcount: 0,
-            names: [],
             varnames: ['foo'],
-            freevars: [],
             cellvars: ['x'],
             instructions: [
               ['load-const', 0],
@@ -737,15 +603,11 @@ print(f()) # 2
               ['load-deref', 0],
               ['return-value'],
             ],
-          },
+          }),
           '<lambda>',
-          null ],
+          null,
+        ],
         names: ['f', 'print'],
-        varnames: [],
-        freevars: [],
-        cellvars: [],
-        nlocals: 0,
-        argcount: 0,
         instructions: [
           ['load-const', 0],
           ['load-const', 1],
@@ -759,7 +621,7 @@ print(f()) # 2
           ['load-const', 2],
           ['return-value'],
         ],
-      });
+      }));
     });
   });                           // Expression
 
@@ -769,14 +631,9 @@ print(f()) # 2
         const tree = parse(`a = 51; print(a)`);
         const code = translate(tree);
 
-        expect(code).toEqual({
-          nlocals: 0,
-          argcount: 0,
+        expect(code).toEqual(coObj({
           constants: [51, null],
           names: ['a', 'print'],
-          varnames: [],
-          freevars: [],
-          cellvars: [],
           instructions: [
             ['load-const', 0],
             ['store-name', 0],
@@ -786,7 +643,7 @@ print(f()) # 2
             ['load-const', 1],
             ['return-value'],
           ],
-        });
+        }));
       });
     });
   });

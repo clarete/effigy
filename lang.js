@@ -115,18 +115,21 @@ const addToTable = (t, i) => {
   return pos >= 0 ? pos : t.push(i)-1;
 };
 
+// Code object shape for dummyAssembler. Only exported as public
+// because it's useful for tests.
+const coObj = (override={}) => ({
+  constants: [],
+  argcount: 0,
+  nlocals: 0,
+  names: [],
+  varnames: [],
+  freevars: [],
+  cellvars: [],
+  instructions: [],
+  ...override,
+});
+
 function dummyAssembler() {
-  // Code object shape
-  const code = () => ({
-    constants: [],
-    argcount: 0,
-    nlocals: 0,
-    names: [],
-    varnames: [],
-    freevars: [],
-    cellvars: [],
-    instructions: [],
-  });
   // Support for nested functions
   const stack = [];
   // Current object
@@ -136,7 +139,7 @@ function dummyAssembler() {
   const attr = (name, value) =>
     value === undefined ? get(name): set(name, value);
   // Control scope
-  const enter = () => stack.push(code());
+  const enter = () => stack.push(coObj());
   const leave = () => stack.pop();
   // -- Mutator for instructions
   const emit = (op, arg) => curr()
@@ -472,6 +475,7 @@ function translateFile(filename) {
 
 module.exports = {
   parse,
+  coObj,
   translate,
   translateScope,
   translateFile,
