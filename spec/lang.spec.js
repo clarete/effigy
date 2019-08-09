@@ -28,6 +28,46 @@ describe("Scope", () => {
 
 describe("Translate", () => {
   describe("Expression", () => {
+    describe("Values", () => {
+      it("should work with numbers", () => {
+        const tree = parse("1");
+        const code = translate(tree);
+        expect(code).toEqual({
+          nlocals: 0,
+          argcount: 0,
+          constants: [1, null],
+          names: [],
+          varnames: [],
+          freevars: [],
+          cellvars: [],
+          instructions: [
+            ['load-const', 0],
+            ['load-const', 1],
+            ['return-value'],
+          ],
+        });
+      });
+
+      it("should work with strings", () => {
+        const tree = parse('"oi"');
+        const code = translate(tree);
+
+        expect(code).toEqual({
+          nlocals: 0,
+          argcount: 0,
+          constants: ['oi', null],
+          names: [],
+          varnames: [],
+          freevars: [],
+          cellvars: [],
+          instructions: [
+            ['load-const', 0],
+            ['load-const', 1],
+            ['return-value'],
+          ],
+        });
+      });
+    });                         // Values
     describe("Call", () => {
       it("with no parameters", () => {
         const tree = parse("print()");

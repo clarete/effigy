@@ -37,6 +37,7 @@ const parserActions = {
   HEX: (_, x) => toint(x(), 16),
   BIN: (_, x) => toint(join(x()).replace('0b', ''), 2),
   Identifier: (n, x) => ["Load", join(x())],
+  String: (n, x) => [n, join(x())],
   // Things we want tagged
   Module: tag,
   Code: tag,
@@ -420,6 +421,7 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
 
     // Values & Expressions
     Number: (_, x) => loadConst(x()[1]),
+    String: (_, x) => loadConst(x()[1]),
     LoadAttr: (_, x) => loadAttr(x()[1]),
     BinOp: (_, x) => {
       const value = x();

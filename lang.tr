@@ -37,8 +37,10 @@ CallPOne   <- Expression
 CallPNone  <- 
 
 Value      <- { "Value" Number }
+            / { "Value" String }
 
 Number     <- { "Number" Atom }
+String     <- { "String" Atom }
 
 Load       <- { "Load" Atom  }
 Store      <- { "Store" Atom  }
