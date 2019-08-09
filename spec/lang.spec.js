@@ -552,77 +552,6 @@ print(f(1))      # 9
         }));
       });
     });                         // Scopes
-
-    it("should support let", () => {
-      const tree = parse(`
-f = fn() {
-  let x = 1;
-  foo = fn(v) { x = x + v; x };
-  foo(1);
-  x
-}
-print(f()) # 2
-      `);
-      const code = translate(tree);
-
-      expect(code).toEqual(coObj({
-        constants: [
-          coObj({
-            constants: [
-              1,
-              coObj({
-                varnames: ['v'],
-                freevars: ['x'],
-                nlocals: 1,
-                argcount: 1,
-                instructions: [
-                  ['load-deref', 0],
-                  ['load-fast', 0],
-                  ['binary-add' ],
-                  ['store-deref', 0],
-                  ['load-deref', 0],
-                  ['return-value' ],
-                ],
-              }),
-              '<lambda>' ],
-            nlocals: 1,
-            varnames: ['foo'],
-            cellvars: ['x'],
-            instructions: [
-              ['load-const', 0],
-              ['store-deref', 0],
-              ['load-closure', 0],
-              ['build-tuple', 1],
-              ['load-const', 1 ],
-              ['load-const', 2 ],
-              ['make-function', 8 ],
-              ['store-fast', 0],
-              ['load-fast', 0],
-              ['load-const', 0],
-              ['call-function', 1],
-              ['load-deref', 0],
-              ['return-value'],
-            ],
-          }),
-          '<lambda>',
-          null,
-        ],
-        names: ['f', 'print'],
-        instructions: [
-          ['load-const', 0],
-          ['load-const', 1],
-          ['make-function', 0],
-          ['store-name', 0],
-
-          ['load-name', 1],
-          ['load-name', 0],
-          ['call-function', 0],
-          ['call-function', 1],
-          ['load-const', 2],
-          ['return-value'],
-        ],
-      }));
-    });
   });                           // Expression
 
   describe('Statement', () => {
@@ -641,6 +570,77 @@ print(f()) # 2
             ['load-name', 0],
             ['call-function', 1],
             ['load-const', 1],
+            ['return-value'],
+          ],
+        }));
+      });
+
+      it("should support let", () => {
+        const tree = parse(`
+f = fn() {
+  let x = 1;
+  foo = fn(v) { x = x + v; x };
+  foo(1);
+  x
+}
+print(f()) # 2
+      `);
+        const code = translate(tree);
+
+        expect(code).toEqual(coObj({
+          constants: [
+            coObj({
+              constants: [
+                1,
+                coObj({
+                  varnames: ['v'],
+                  freevars: ['x'],
+                  nlocals: 1,
+                  argcount: 1,
+                  instructions: [
+                    ['load-deref', 0],
+                    ['load-fast', 0],
+                    ['binary-add' ],
+                    ['store-deref', 0],
+                    ['load-deref', 0],
+                    ['return-value' ],
+                  ],
+                }),
+                '<lambda>' ],
+              nlocals: 1,
+              varnames: ['foo'],
+              cellvars: ['x'],
+              instructions: [
+                ['load-const', 0],
+                ['store-deref', 0],
+                ['load-closure', 0],
+                ['build-tuple', 1],
+                ['load-const', 1 ],
+                ['load-const', 2 ],
+                ['make-function', 8 ],
+                ['store-fast', 0],
+                ['load-fast', 0],
+                ['load-const', 0],
+                ['call-function', 1],
+                ['load-deref', 0],
+                ['return-value'],
+              ],
+            }),
+            '<lambda>',
+            null,
+          ],
+          names: ['f', 'print'],
+          instructions: [
+            ['load-const', 0],
+            ['load-const', 1],
+            ['make-function', 0],
+            ['store-name', 0],
+
+            ['load-name', 1],
+            ['load-name', 0],
+            ['call-function', 0],
+            ['call-function', 1],
+            ['load-const', 2],
             ['return-value'],
           ],
         }));
