@@ -47,9 +47,13 @@ ElseStm         <- _ELSE Code
 ReturnStm       <- _RETURN Expression
 
 # Values
-Value           <- Number / String / BOOL
+Value           <- Number / BOOL / String / List
 Number          <- BIN / HEX / FLOAT / DEC
 String          <- _DQUOTE (!_DQUOTE .)* _DQUOTE _
+List            <- _SBOP (ListMult / ListOne / ListNone) _SBCL _
+ListMult        <- Expression (_COMA Expression)+
+ListOne         <- Expression
+ListNone        <-
 
 # Lexcical Hierarchy
 
@@ -79,6 +83,8 @@ _PROP           <- '(' _
 _PRCL           <- ')' _
 _CBOP           <- '{' _
 _CBCL           <- '}' _
+_SBOP           <- '[' _
+_SBCL           <- ']' _
 _ASSIGN         <- '=' _
 
 ## Arithmetic Operators

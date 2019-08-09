@@ -48,6 +48,15 @@ const parserActions = {
   Lambda: tag,
   Params: tag,
   Param: tag,
+  // List Values
+  List: tag,
+  ListOne: (_, x) => [x()],
+  ListMult: (_, x) => {
+    const value = x();
+    return (multi(value[1]))
+      ? [value[0]].concat(value[1])
+      : value;
+  },
   // Just need to pop the name of the function off the `Load` node
   Function: (n, x) => {
     const value = x();
@@ -343,6 +352,11 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
     return newn;
   };
   // -- Emit instructions for more involved operations
+  const list = value => {
+    const items = value[1] ? value[1].length : 0;
+    emit('build-list', items);
+    return value;
+  };
   const call = (n, c) => {
     const [_, [, { val, len }]] = c;
     emit(`call-${n}`, len);
@@ -425,6 +439,9 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
     // Values & Expressions
     Number: (_, x) => loadConst(x()[1]),
     String: (_, x) => loadConst(x()[1]),
+    List: (_, x) => list(x()),
+
+    // Operators
     LoadAttr: (_, x) => loadAttr(x()[1]),
     BinOp: (_, x) => {
       const value = x();

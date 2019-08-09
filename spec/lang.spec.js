@@ -61,6 +61,55 @@ describe("Translate", () => {
           }));
         });
       });
+
+      describe("list", () => {
+        it("should accept empty lists", () => {
+          const tree = parse('[]');
+          const code = translate(tree);
+
+          expect(code).toEqual(coObj({
+            constants: [null],
+            instructions: [
+              ['build-list', 0],
+              ['load-const', 0],
+              ['return-value'],
+            ],
+          }));
+        });
+
+        it("should accept single item lists", () => {
+          const tree = parse('[1]');
+          const code = translate(tree);
+
+          expect(code).toEqual(coObj({
+            constants: [1, null],
+            instructions: [
+              ['load-const', 0],
+              ['build-list', 1],
+              ['load-const', 1],
+              ['return-value'],
+            ],
+          }));
+        });
+
+        it("should accept multiple item lists", () => {
+          const tree = parse('[1, 2, 3, 4]');
+          const code = translate(tree);
+
+          expect(code).toEqual(coObj({
+            constants: [1, 2, 3, 4, null],
+            instructions: [
+              ['load-const', 0],
+              ['load-const', 1],
+              ['load-const', 2],
+              ['load-const', 3],
+              ['build-list', 4],
+              ['load-const', 4],
+              ['return-value'],
+            ],
+          }));
+        });
+      });
     });                         // Values
     describe("Call", () => {
       it("with no parameters", () => {

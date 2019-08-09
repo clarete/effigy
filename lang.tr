@@ -36,11 +36,10 @@ CallPMult  <- { Expression+ }
 CallPOne   <- Expression
 CallPNone  <- 
 
-Value      <- { "Value" Number }
-            / { "Value" String }
-
+Value      <- { "Value" (Number / String / List) }
 Number     <- { "Number" Atom }
 String     <- { "String" Atom }
+List       <- { "List" { Expression* }? }
 
 Load       <- { "Load" Atom  }
 Store      <- { "Store" Atom  }
