@@ -44,6 +44,20 @@ describe("Translate", () => {
             ],
           }));
         });
+
+        it("should translate hexdecimal", () => {
+          const tree = parse("0x123");
+          const code = translate(tree);
+
+          expect(code).toEqual(coObj({
+            constants: [291, null],
+            instructions: [
+              ['load-const', 0],
+              ['load-const', 1],
+              ['return-value'],
+            ],
+          }));
+        });
       });
 
       describe("strings", () => {
