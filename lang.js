@@ -31,6 +31,15 @@ const tag = (n, v) => {
   return value !== undefined ? [n, value] : value;
 };
 
+const trOne = (_, x) => [x()];
+const trMult = (_, x) => {
+  const value = x();
+  return (multi(value[1]))
+    ? [value[0]].concat(value[1])
+    : value;
+};
+
+
 const parserActions = {
   // Minimal transformation for numbers & names
   DEC: (_, x) => toint(x(), 10),
@@ -46,17 +55,15 @@ const parserActions = {
   Value: tag,
   Call: tag,
   Lambda: tag,
-  Params: tag,
-  Param: tag,
   // List Values
   List: tag,
-  ListOne: (_, x) => [x()],
-  ListMult: (_, x) => {
-    const value = x();
-    return (multi(value[1]))
-      ? [value[0]].concat(value[1])
-      : value;
-  },
+  ListOne: trOne,
+  ListMult: trMult,
+  // Parameters
+  Param: tag,
+  Params: tag,
+  ParamsOne: trOne,
+  ParamsMult: trMult,
   // Just need to pop the name of the function off the `Load` node
   Function: (n, x) => {
     const value = x();
@@ -373,7 +380,9 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
     const isAnon = n === 'Lambda';
     // Slightly different tree shape for lambdas & functions
     const name = isAnon ? '<lambda>' : v[1][1];
-    const argcount = isAnon ? v[1][1].len : v[1][2].len;
+    const paramsNode = isAnon ? v[1][1][1] : v[1][2][1];
+    const argcount = paramsNode ? paramsNode.length : 0;
+
     // Need to acquire the scope & update tables before popping the
     // current code object
     const scope = getscope();
@@ -423,9 +432,6 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
 
     // Parameter Rule application
     Param: (_, x) => newVarName(x()[1]),
-    ParamsMult: (_, x) => { const val = x(); return { val, len: val.length }; },
-    ParamsOne: (_, x) => ({ val: x(), len: 1 }),
-    ParamsNone: (_, x) => ({ val: x(), len: 0 }),
 
     // Callable Definition
     Lambda: (n, x) => func(n, x),

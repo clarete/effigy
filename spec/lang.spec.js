@@ -422,15 +422,15 @@ describe("Translate", () => {
       });
 
       it("should support lambdas with multiple parameters in fn definition", () => {
-        const tree = parse('fn(x, y) 1');
+        const tree = parse('fn(x, y, z) 1');
         const code = translate(tree);
 
         expect(code).toEqual(coObj({
           constants: [coObj({
-            nlocals: 2,
-            argcount: 2,
+            nlocals: 3,
+            argcount: 3,
             constants: [1],
-            varnames: ['x', 'y'],
+            varnames: ['x', 'y', 'z'],
             instructions: [
               ['load-const', 0],
               ['return-value'],

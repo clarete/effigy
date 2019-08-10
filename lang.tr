@@ -23,10 +23,7 @@ Function   <- { "Function" { Atom Params Code } }
             / { "Function" { ScopeId Atom Params Code } }
 
 # Callable Parameter rules
-Params     <- ParamsMult / ParamsOne / ParamsNone
-ParamsMult <- { "Params" { Param+ } }
-ParamsOne  <- { "Params" Param }
-ParamsNone <- { "Params" }
+Params     <- { "Params" { Param+ }? }
 Param      <- { "Param" Atom }
 
 # Call Site rules

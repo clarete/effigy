@@ -26,8 +26,11 @@ Primary         <- _PROP Expression _PRCL
 # Function Declaration
 Function        <- _FN Identifier Params Code
 Lambda          <- _FN Params Code
-Params          <- _PROP (Param (_COMA Param)*)? _PRCL
 Param           <- Identifier (_ASSIGN Expression)?
+Params          <- _PROP (ParamsMult / ParamsOne / ParamsNone) _PRCL
+ParamsMult      <- Param (_COMA Param)+
+ParamsOne       <- Param
+ParamsNone      <-
 
 # Function Call
 CallParams      <- _PROP (ListMult / ListOne / ListNone) _PRCL
