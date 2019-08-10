@@ -177,6 +177,27 @@ describe("Translate", () => {
         }));
       });
 
+      it("with many parameter", () => {
+        const tree = parse('print(42, 43, "a", foo())');
+        const code = translate(tree);
+
+        expect(code).toEqual(coObj({
+          constants: [42, 43, "a", null],
+          names: ['print', 'foo'],
+          instructions: [
+            ['load-name', 0],
+            ['load-const', 0],
+            ['load-const', 1],
+            ['load-const', 2],
+            ['load-name', 1],
+            ['call-function', 0],
+            ['call-function', 4],
+            ['load-const', 3],
+            ['return-value'],
+          ],
+        }));
+      });
+
       it("should execute two fun calls in a row", () => {
         const tree = parse(`print(1); print(2)`);
         const code = translate(tree);

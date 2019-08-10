@@ -358,11 +358,9 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
     return value;
   };
   const call = (n, c) => {
-    const [_, [, { val, len }]] = c;
-    emit(`call-${n}`, len);
-    // Must return something truthy to avoid changing shape of subtree
-    // needed by `BinOp' as a parent node
-    return val || true;
+    const length = c[1][1] ? c[1][1].length : 0;
+    emit(`call-${n}`, length);
+    return c;
   };
   const scopeId = (visit) => {
     const value = visit();
@@ -422,9 +420,6 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
     // Call Site Rule application
     Call: (_, x) => call('function', x()),
     MethodCall: (_, x) => call('method', x()),
-    CallPMult: (_, x) => { const val = x(); return { val, len: val.length }; },
-    CallPOne: (_, x) => ({ val: x(), len: 1 }),
-    CallPNone: (_, x) => ({ val: x(), len: 0 }),
 
     // Parameter Rule application
     Param: (_, x) => newVarName(x()[1]),

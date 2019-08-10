@@ -30,7 +30,7 @@ Params          <- _PROP (Param (_COMA Param)*)? _PRCL
 Param           <- Identifier (_ASSIGN Expression)?
 
 # Function Call
-CallParams      <- _PROP (Expression (_COMA Expression)*)? _PRCL
+CallParams      <- _PROP (ListMult / ListOne / ListNone) _PRCL
 
 # Statements
 Statement       <- ReturnStm / WhileStm / ForStm / IfStm / Assignment / LexAssignment
@@ -50,7 +50,7 @@ ReturnStm       <- _RETURN Expression
 Value           <- Number / BOOL / String / List
 Number          <- BIN / HEX / FLOAT / DEC
 String          <- _DQUOTE (!_DQUOTE .)* _DQUOTE _
-List            <- _SBOP (ListMult / ListOne / ListNone) _SBCL _
+List            <- _SBOP (ListMult / ListOne / ListNone) _SBCL
 ListMult        <- Expression (_COMA Expression)+
 ListOne         <- Expression
 ListNone        <-

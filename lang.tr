@@ -31,11 +31,9 @@ Param      <- { "Param" Atom }
 
 # Call Site rules
 Call       <- { "Call" { Expression CallParams } }
-CallParams <- CallPMult / CallPOne / CallPNone
-CallPMult  <- { Expression+ }
-CallPOne   <- Expression
-CallPNone  <- 
+CallParams <- { Expression+ }?
 
+# Value rules
 Value      <- { "Value" (Number / String / List) }
 Number     <- { "Number" Atom }
 String     <- { "String" Atom }
