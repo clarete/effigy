@@ -60,6 +60,34 @@ describe("Translate", () => {
         });
       });
 
+      describe("booleans", () => {
+        it("should work with true", () => {
+          const tree = parse('true');
+          const code = translate(tree);
+          expect(code).toEqual(coObj({
+            constants: [true, null],
+            instructions: [
+              ['load-const', 0],
+              ['load-const', 1],
+              ['return-value'],
+            ],
+          }));
+        });
+
+        it("should work with false", () => {
+          const tree = parse('false');
+          const code = translate(tree);
+          expect(code).toEqual(coObj({
+            constants: [false, null],
+            instructions: [
+              ['load-const', 0],
+              ['load-const', 1],
+              ['return-value'],
+            ],
+          }));
+        });
+      });
+
       describe("strings", () => {
         it("should work with double quotes", () => {
           const tree = parse('"oi"');

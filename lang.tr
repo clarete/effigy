@@ -31,9 +31,10 @@ Call       <- { "Call" { Expression CallParams } }
 CallParams <- { Expression+ }?
 
 # Value rules
-Value      <- { "Value" (Number / String / List) }
+Value      <- { "Value" (Number / String / Boolean / List) }
 Number     <- { "Number" Atom }
 String     <- { "String" Atom }
+Boolean    <- { "BOOL" Atom }
 List       <- { "List" { Expression* }? }
 
 Load       <- { "Load" Atom  }

@@ -52,6 +52,7 @@ const parserActions = {
   Code: tag,
   Statement: tag,
   Number: tag,
+  BOOL: tag,
   Value: tag,
   Call: tag,
   Lambda: tag,
@@ -440,6 +441,7 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
     // Values & Expressions
     Number: (_, x) => loadConst(x()[1]),
     String: (_, x) => loadConst(x()[1]),
+    Boolean: (_, x) => loadConst({ true: true, false: false }[x()[1]]),
     List: (_, x) => list(x()),
 
     // Operators
