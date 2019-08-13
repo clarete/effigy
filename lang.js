@@ -51,6 +51,7 @@ const parserActions = {
   Module: tag,
   Code: tag,
   Statement: tag,
+  IfStm: tag,
   Number: tag,
   BOOL: tag,
   Value: tag,
@@ -162,8 +163,13 @@ function dummyAssembler() {
   const emit = (op, arg) => curr()
     .instructions
     .push(arg !== undefined ? [op, arg] : [op]);
+  // -- Save labels and patch'em back
+  const labels = [];
+  const ref = () => { labels.push(pos()); return labels.length-1; };
+  const pos = () => curr().instructions.length;
+  const fix = (l, p) => curr().instructions[labels[l]][1] = p * 2;
   // -- Basic interface for assembler
-  return { enter, leave, emit, attr };
+  return { enter, leave, emit, attr, ref, pos, fix };
 }
 
 const UN_OP_MAP = {
@@ -306,7 +312,7 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
   // 3.1. Traverse tree once to build the scope
   const [symtable, scopedTree] = translateScope(tree);
   // 3.2. Translation Actions
-  const { enter, leave, emit, attr } = assembler;
+  const { enter, leave, emit, attr, ref, pos, fix } = assembler;
   // -- Mutators for adding new items to tables
   const newConst = c => addToTable(attr('constants'), c);
   const newName = c => addToTable(attr('names'), c);
@@ -444,6 +450,22 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
     Boolean: (_, x) => loadConst({ true: true, false: false }[x()[1]]),
     List: (_, x) => list(x()),
 
+    // Statements
+    IfStm: (_, x) => {
+      const [[label, test], [labelpos, body]] = x()[1];
+      fix(label, labelpos);
+      return [test, body];
+    },
+    IfStmTest: (_, x) => {
+      const value = x();
+      const label = ref();
+      emit('pop-jump-if-false', label);
+      return [label, value];
+    },
+    IfStmBody: (_, x) => {
+      const value = x();
+      return [pos(), value];
+    },
     // Operators
     LoadAttr: (_, x) => loadAttr(x()[1]),
     BinOp: (_, x) => {

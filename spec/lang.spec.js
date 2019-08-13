@@ -757,6 +757,26 @@ print(f()) # 2
           ],
         }));
       });
-    });
-  });
+    });                         // Assignment
+
+    describe('If', () => {
+      it("should provide if statement", () => {
+        const tree = parse('if true 1');
+        const code = translate(tree);
+
+        expect(code).toEqual(coObj({
+          constants: [true, 1, null],
+          names: [],
+          instructions: [
+            ['load-const', 0],
+            ['pop-jump-if-false', 6],
+            ['load-const', 1],
+            ['load-const', 2],
+            ['return-value'],
+          ],
+        }));
+      });
+    });                         // If
+
+  });                           // Statement
 });

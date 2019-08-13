@@ -43,9 +43,8 @@ LexAssignment   <- _LET Identifier _ASSIGN Expression
 # Control Flow Statements
 ForStm          <- _FOR ForSteps Code
 ForSteps        <- _PROP (Expression / Assignment) _COMA Expression _COMA Expression _PRCL
-Test            <- _PROP Expression _PRCL
-WhileStm        <- _WHILE Test Code
-IfStm           <- _IF Test Code ElseStm?
+WhileStm        <- _WHILE Expression Code
+IfStm           <- _IF Expression Code ElseStm?
 ElseStm         <- _ELSE Code
 ReturnStm       <- _RETURN Expression
 

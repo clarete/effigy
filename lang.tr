@@ -5,8 +5,12 @@ Module     <- { "Module" { (Statement / Expression)+ } }
 Code       <- { "Code" { (Statement / Expression)+ } }
             / { "Code" (Statement / Expression) }
 
-Statement  <- { "Statement" Assignment }
+Statement  <- { "Statement" (Assignment / IfStm) }
 Assignment <- { "Assignment" { Expression (Store / StoreLex) } }
+IfStm      <- { "IfStm" { IfStmTest IfStmBody } }
+IfStmTest  <- Expression
+IfStmBody  <- Code
+
 Expression <- Attribute / BinOp / Call / Lambda / Function / Load / Unary / Value
 
 BinOp      <- { "BinOp" Expression Atom Expression }
