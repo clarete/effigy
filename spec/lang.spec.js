@@ -788,7 +788,6 @@ print(f()) # 2
 
         expect(code).toEqual(coObj({
           constants: [true, 1, 2, null],
-          names: [],
           instructions: [
             ['load-const', 0],
             ['pop-jump-if-false', 8],
@@ -800,7 +799,28 @@ print(f()) # 2
           ],
         }));
       });
-
     });                         // If
+
+    describe('While', () => {
+      it("should translate basic case", () => {
+        const tree = parse('while true 1');
+        const code = translate(tree);
+
+        expect(code).toEqual(coObj({
+          constants: [true, 1, null],
+          instructions: [
+            ['setup-loop', 12],
+            ['load-const', 0],
+            ['pop-jump-if-false', 12],
+            ['load-const', 1],
+            ['jump-absolute', 0],
+            ['pop-block'],
+            ['load-const', 2],
+            ['return-value'],
+          ],
+        }));
+      });
+    });
+
   });                           // Statement
 });

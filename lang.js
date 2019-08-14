@@ -52,6 +52,7 @@ const parserActions = {
   Code: tag,
   Statement: tag,
   IfStm: tag,
+  WhileStm: tag,
   Number: tag,
   BOOL: tag,
   Value: tag,
@@ -474,6 +475,19 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
       fix(label, pos() - savedPos - 1);
       return value;
     },
+
+    WhileStm: (_, x) => {
+      const loopLabel = ref();
+      const loopPos = pos();
+      emit('setup-loop', loopLabel);
+      const [[label, test], [labelpos, body]] = x()[1];
+      emit('jump-absolute', loopPos*2);
+      emit('pop-block');
+      fix(label, pos());
+      fix(loopLabel, pos());
+      return [test, body];
+    },
+
     // Operators
     LoadAttr: (_, x) => loadAttr(x()[1]),
     BinOp: (_, x) => {

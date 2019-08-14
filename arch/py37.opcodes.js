@@ -86,6 +86,7 @@ module.exports.OP_JUMP_ABSOLUTE           = 113;
 module.exports.OP_POP_JUMP_IF_FALSE       = 114;
 module.exports.OP_POP_JUMP_IF_TRUE        = 115;
 module.exports.OP_LOAD_GLOBAL             = 116;
+module.exports.OP_SETUP_LOOP              = 120;
 module.exports.OP_SETUP_FINALLY           = 122;
 module.exports.OP_LOAD_FAST               = 124;
 module.exports.OP_STORE_FAST              = 125;

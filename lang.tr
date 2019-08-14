@@ -3,9 +3,10 @@
 Module     <- { "Module" ({ Statement+ } / Statement)? }
 Code       <- { "Code" ({ Statement+ } / Statement)? }
 
-Statement  <- { "Statement" (Assignment / IfStm / Function / ExprStm) }
+Statement  <- { "Statement" (Assignment / IfStm / WhileStm / Function / ExprStm) }
 Assignment <- { "Assignment" { Expression (Store / StoreLex) } }
 ExprStm    <- Expression
+WhileStm   <- { "WhileStm" { IfStmTest IfStmBody } }
 IfStm      <- { "IfStm" { IfStmTest IfStmBody ElseStm? } }
 IfStmTest  <- Expression
 IfStmBody  <- Code
