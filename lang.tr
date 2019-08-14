@@ -1,18 +1,17 @@
 # -*- Mode: peg; -*-
 
-Module     <- { "Module" { (Statement / Expression)+ } }
-            / { "Module" (Statement / Expression) }
-Code       <- { "Code" { (Statement / Expression)+ } }
-            / { "Code" (Statement / Expression) }
+Module     <- { "Module" ({ Statement+ } / Statement)? }
+Code       <- { "Code" ({ Statement+ } / Statement)? }
 
-Statement  <- { "Statement" (Assignment / IfStm) }
+Statement  <- { "Statement" (Assignment / IfStm / Function / ExprStm) }
 Assignment <- { "Assignment" { Expression (Store / StoreLex) } }
+ExprStm    <- Expression
 IfStm      <- { "IfStm" { IfStmTest IfStmBody ElseStm? } }
 IfStmTest  <- Expression
 IfStmBody  <- Code
 ElseStm    <- Code
 
-Expression <- Attribute / BinOp / Call / Lambda / Function / Load / Unary / Value
+Expression <- Attribute / BinOp / Call / Lambda / Load / Unary / Value
 
 BinOp      <- { "BinOp" Expression Atom Expression }
 Unary      <- { "Unary" { Atom Expression } }

@@ -343,34 +343,39 @@ describe("Translate", () => {
         const tree0 = parse('print.__doc__');
         expect(tree0).toEqual(
           ['Module',
+           ['Statement',
             ['Attribute',
              [['Load', 'print'],
-              ['LoadAttr', '__doc__']]]]);
+              ['LoadAttr', '__doc__']]]]]);
         const tree1 = parse('print.__doc__.__str__().__str__');
         expect(tree1).toEqual(
           ['Module',
-           ['Attribute',
-            [['Load', 'print'],
-             ['LoadAttr', '__doc__'],
-             ['MethodCall', [['LoadMethod', '__str__']]],
-             ['LoadAttr', '__str__']]]]);
+           ['Statement',
+            ['Attribute',
+             [['Load', 'print'],
+              ['LoadAttr', '__doc__'],
+              ['MethodCall', [['LoadMethod', '__str__']]],
+              ['LoadAttr', '__str__']]]]]);
       });
 
       it("should translate deep attribute access correctly", () => {
         const tree = parse('print.__doc__.zfill');
         const [,scope] = translateScope(tree);
+
         expect(tree).toEqual(
           ['Module',
+           ['Statement',
             ['Attribute',
              [['Load', 'print'],
               ['LoadAttr', '__doc__'],
-              ['LoadAttr', 'zfill']]]]);
+              ['LoadAttr', 'zfill']]]]]);
         expect(scope).toEqual(
           ['Module',
-           ['Attribute',
-            [['Load', 'print'],
-             ['LoadAttr', '__doc__'],
-             ['LoadAttr', 'zfill']]]]);
+           ['Statement',
+            ['Attribute',
+             [['Load', 'print'],
+              ['LoadAttr', '__doc__'],
+              ['LoadAttr', 'zfill']]]]]);
       });
 
       it("should provide attribute access", () => {

@@ -1,7 +1,6 @@
 # Scopes
-Module          <- _ (Statement / Expression)+ _EndOfFile
-Code            <- _CBOP (Statement / Expression)* _CBCL
-                 / (Statement / Expression)
+Module          <- _ Statement+ _EndOfFile
+Code            <- _CBOP Statement* _CBCL / Statement
 
 # Expressions
 Expression      <- BitLogical
@@ -36,7 +35,8 @@ ParamsNone      <-
 CallParams      <- _PROP (ListMult / ListOne / ListNone) _PRCL
 
 # Statements
-Statement       <- ReturnStm / WhileStm / ForStm / IfStm / Assignment / LexAssignment
+Statement       <- ReturnStm / WhileStm / ForStm / IfStm / Assignment / LexAssignment / ExprStm
+ExprStm         <- Expression
 Assignment      <- Identifier _ASSIGN Expression
 LexAssignment   <- _LET Identifier _ASSIGN Expression
 
