@@ -1,8 +1,8 @@
 {
-  "name": "yapeg",
+  "name": "effigy",
   "version": "0.0.1",
-  "description": "Parsing Expression Grammars",
-  "main": "peg.js",
+  "description": "Tiny Language",
+  "main": "compiler",
   "devDependencies": {
     "jasmine": "^3.4.0"
   },
@@ -10,5 +10,5 @@
     "test": "jasmine"
   },
   "author": "Lincoln Clarete",
-  "license": "MIT"
+  "license": "GPL-3.0"
 }
