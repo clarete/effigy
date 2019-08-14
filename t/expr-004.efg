@@ -1,0 +1,8 @@
+# Built-in types
+
+# booleans
+print(true); print(false)
+# strings
+print("a" + "b")
+# lists
+print([1, 2, 3, [4, 5], -6])

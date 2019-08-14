@@ -1,0 +1,4 @@
+fn stuff(a, b, c) {
+  a
+}
+print(stuff(1, 2, 3))

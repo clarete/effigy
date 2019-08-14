@@ -1,0 +1,15 @@
+if true {
+  print("nice")
+}
+
+if false {
+  print("not quite nice")
+} else {
+  1
+}
+
+# if false {
+#   print(1)
+# } else {
+#   print(2)
+# }
