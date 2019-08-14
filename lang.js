@@ -452,8 +452,8 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
 
     // Statements
     IfStm: (_, x) => {
-      const [[label, test], [labelpos, body]] = x()[1];
-      fix(label, labelpos);
+      const [[label, test], [labelpos, body], elseStm] = x()[1];
+      fix(label, labelpos + (elseStm ? 1 : 0));
       return [test, body];
     },
     IfStmTest: (_, x) => {
@@ -465,6 +465,14 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
     IfStmBody: (_, x) => {
       const value = x();
       return [pos(), value];
+    },
+    ElseStm: (_, x) => {
+      const label = ref();
+      const savedPos = pos();
+      emit('jump-forward', label);
+      const value = x();
+      fix(label, pos() - savedPos - 1);
+      return value;
     },
     // Operators
     LoadAttr: (_, x) => loadAttr(x()[1]),

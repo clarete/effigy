@@ -776,7 +776,26 @@ print(f()) # 2
           ],
         }));
       });
-    });                         // If
 
+      it("should provide else statement", () => {
+        const tree = parse('if true 1 else 2');
+        const code = translate(tree);
+
+        expect(code).toEqual(coObj({
+          constants: [true, 1, 2, null],
+          names: [],
+          instructions: [
+            ['load-const', 0],
+            ['pop-jump-if-false', 8],
+            ['load-const', 1],
+            ['jump-forward', 2],
+            ['load-const', 2],
+            ['load-const', 3],
+            ['return-value'],
+          ],
+        }));
+      });
+
+    });                         // If
   });                           // Statement
 });

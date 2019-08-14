@@ -7,9 +7,10 @@ Code       <- { "Code" { (Statement / Expression)+ } }
 
 Statement  <- { "Statement" (Assignment / IfStm) }
 Assignment <- { "Assignment" { Expression (Store / StoreLex) } }
-IfStm      <- { "IfStm" { IfStmTest IfStmBody } }
+IfStm      <- { "IfStm" { IfStmTest IfStmBody ElseStm? } }
 IfStmTest  <- Expression
 IfStmBody  <- Code
+ElseStm    <- Code
 
 Expression <- Attribute / BinOp / Call / Lambda / Function / Load / Unary / Value
 
