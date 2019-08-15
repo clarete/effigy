@@ -3,7 +3,8 @@ Module          <- _ Statement+ _EndOfFile
 Code            <- _CBOP Statement* _CBCL / Statement
 
 # Expressions
-Expression      <- BitLogical
+Expression      <- Logical
+Logical         <- BitLogical ((AND / OR) BitLogical)*
 BitLogical      <- Comparison ((BAND / BXOR / BOR) Comparison)*
 Comparison      <- BitShifting ((EQ / NEQ / LTE / GTE / LT / GT) BitShifting)*
 BitShifting     <- Term ((RSHIFT / LSHIFT) Term)*
@@ -113,6 +114,10 @@ LSHIFT          <- '<<' _
 BAND            <- '&'  _
 BOR             <- '|'  _
 BXOR            <- '^'  _
+
+## Logic Operators
+AND             <- 'and' _
+OR              <- 'or'  _
 
 ## Member Access Operators
 _DOT            <- '.' _

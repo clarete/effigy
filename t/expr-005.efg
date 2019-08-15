@@ -1,0 +1,4 @@
+# Logical Operators
+print("true and true:", true and true)
+print("true and false:", true and false)
+print("true and false or 1:", true and false or 1)

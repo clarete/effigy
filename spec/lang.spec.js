@@ -338,6 +338,42 @@ describe("Translate", () => {
       });
     });                         // BinOp
 
+    describe("BoolOp", () => {
+      it("should work with two operands", () => {
+        const tree = parse('true and false');
+        const code = translate(tree);
+
+        expect(code).toEqual(coObj({
+          constants: [true, false, null],
+          instructions: [
+            ['load-const', 0],
+            ['jump-if-false-or-pop', 6],
+            ['load-const', 1],
+            ['load-const', 2],
+            ['return-value'],
+          ],
+        }));
+      });
+
+      it("should work with many operands", () => {
+        const tree = parse('true and false or 1');
+        const code = translate(tree);
+
+        expect(code).toEqual(coObj({
+          constants: [true, false, 1, null],
+          instructions: [
+            ['load-const', 0],
+            ['jump-if-false-or-pop', 6],
+            ['load-const', 1],
+            ['jump-if-true-or-pop', 10],
+            ['load-const', 2],
+            ['load-const', 3],
+            ['return-value'],
+          ],
+        }));
+      });
+    });
+
     describe("Attribute", () => {
       it("should parse deep attribute access correctly", () => {
         const tree0 = parse('print.__doc__');

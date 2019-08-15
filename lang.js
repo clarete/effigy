@@ -31,6 +31,13 @@ const tag = (n, v) => {
   return value !== undefined ? [n, value] : value;
 };
 
+const lift = (n, v) => {
+  const value = v();
+  if (value === undefined) return value;
+  else if (!multi(value)) return value;
+  else return [n, value];
+};
+
 const trOne = (_, x) => [x()];
 const trMult = (_, x) => {
   const value = x();
@@ -47,6 +54,8 @@ const parserActions = {
   BIN: (_, x) => toint(join(x()).replace('0b', ''), 2),
   Identifier: (n, x) => ["Load", join(x())],
   String: (n, x) => [n, join(x())],
+  // Discard if single child
+  Logical: lift,
   // Things we want tagged
   Module: tag,
   Code: tag,
@@ -487,6 +496,22 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
       fix(loopLabel, pos());
       return [test, body];
     },
+
+    // Logical Operators
+    Logical: (_, x) => {
+      const value = x()[1];
+      for (const [label, post] of value[1])
+        fix(label, post);
+      return value;
+    },
+    LogicalTwo: (_, x) => [x()],
+    LogicalOp: (_, x) => {
+      const label = ref();
+      const opcs = { and: 'jump-if-false-or-pop', or: 'jump-if-true-or-pop' };
+      emit(opcs[x()], label);
+      return label;
+    },
+    LogicalRd: (_, x) => { x(); return pos(); },
 
     // Operators
     LoadAttr: (_, x) => loadAttr(x()[1]),

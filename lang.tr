@@ -12,7 +12,14 @@ IfStmTest  <- Expression
 IfStmBody  <- Code
 ElseStm    <- Code
 
-Expression <- Attribute / BinOp / Call / Lambda / Load / Unary / Value
+Expression <- Attribute / Logical / BinOp / Call / Lambda / Load / Unary / Value
+
+# Logical Operators
+Logical    <- { "Logical" { Expression (LogicalTwo / LogicalMult) } }
+LogicalTwo <- { LogicalOp LogicalRd }
+LogicalMult<- { { LogicalOp LogicalRd }+ }
+LogicalOp  <- Atom
+LogicalRd  <- Expression
 
 BinOp      <- { "BinOp" Expression Atom Expression }
 Unary      <- { "Unary" { Atom Expression } }
