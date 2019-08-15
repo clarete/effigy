@@ -475,6 +475,7 @@ describe("Translate", () => {
         expect(code).toEqual(coObj({
           constants: [coObj({
             constants: [1],
+            name: '<lambda>',
             instructions: [
               ['load-const', 0],
               ['return-value'],
@@ -496,6 +497,7 @@ describe("Translate", () => {
 
         expect(code).toEqual(coObj({
           constants: [coObj({
+            name: '<lambda>',
             nlocals: 3,
             argcount: 3,
             constants: [1],
@@ -522,6 +524,7 @@ describe("Translate", () => {
         expect(code).toEqual(coObj({
           constants: [coObj({
             constants: [1],
+            name: 'f',
             instructions: [
               ['load-const', 0],
               ['return-value'],
@@ -553,6 +556,7 @@ describe("Translate", () => {
           constants: [
             1,
             coObj({
+              name: '<lambda>',
               nlocals: 1,
               argcount: 1,
               constants: [1],
@@ -597,6 +601,7 @@ describe("Translate", () => {
 
         expect(code).toEqual(coObj({
           constants: [coObj({
+            name: '<lambda>',
             nlocals: 2,
             argcount: 1,
             constants: [1],
@@ -638,10 +643,12 @@ print(f(1))      # 9
         expect(code).toEqual(coObj({
           constants: [
             coObj({
+              name: '<lambda>',
               nlocals: 2,
               argcount: 1,
               constants: [
                 coObj({
+                  name: '<lambda>',
                   nlocals: 1,
                   argcount: 1,
                   varnames: ['y'],
@@ -746,6 +753,7 @@ print(f()) # 2
               constants: [
                 1,
                 coObj({
+                  name: '<lambda>',
                   varnames: ['v'],
                   freevars: ['x'],
                   nlocals: 1,
@@ -760,6 +768,7 @@ print(f()) # 2
                   ],
                 }),
                 '<lambda>' ],
+              name: '<lambda>',
               nlocals: 1,
               varnames: ['foo'],
               cellvars: ['x'],

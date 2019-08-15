@@ -394,7 +394,7 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
     return value;
   };
   const func = (n, visit) => {
-    enter({ co_name: '<lambda>' });
+    enter({});
     const v = visit();
     const isAnon = n === 'Lambda';
     // Slightly different tree shape for lambdas & functions
@@ -407,6 +407,7 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
     const scope = getscope();
     scope.free.forEach(x => addToTable(attr('freevars'), x));
     scope.cell.forEach(x => addToTable(attr('cellvars'), x));
+    attr('name', name);
     // Update argument count
     attr('argcount', argcount);
     // Update number of local variables
