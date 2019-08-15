@@ -1,0 +1,12 @@
+total = 3
+while total {
+  print(total)
+  total = total - 1
+}
+
+total = 5
+while total {
+  if total % 2
+    print(total)
+  total = total - 1
+}
