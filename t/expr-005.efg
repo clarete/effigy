@@ -2,3 +2,6 @@
 print("true and true:", true and true)
 print("true and false:", true and false)
 print("true and false or 1:", true and false or 1)
+print("not true:", not true)
+print("not false:", not false)
+print("true and not false:", true and not false)

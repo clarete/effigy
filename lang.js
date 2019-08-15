@@ -185,6 +185,7 @@ function dummyAssembler() {
 const UN_OP_MAP = {
   '-': 'unary-negative',
   '+': 'unary-positive',
+  'not': 'unary-not',
 };
 
 const BIN_OP_MAP = {

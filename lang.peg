@@ -12,7 +12,7 @@ BitShifting     <- Term ((RSHIFT / LSHIFT) Term)*
 Term            <- Factor ((PLUS / MINUS) Factor)*
 Factor          <- Power ((STAR / SLASH) Power)*
 Power           <- Unary ((POWER / MOD) Unary)*
-Unary           <- (PLUS / MINUS)? Attribute
+Unary           <- (PLUS / MINUS / NOT)? Attribute
 
 Attribute       <- Attr (_DOT Attr)*
 Attr            <- Call / Primary
@@ -118,6 +118,7 @@ BXOR            <- '^'  _
 ## Logic Operators
 AND             <- 'and' _
 OR              <- 'or'  _
+NOT             <- 'not' _
 
 ## Member Access Operators
 _DOT            <- '.' _
