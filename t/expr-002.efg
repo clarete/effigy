@@ -1,1 +1,1 @@
-print(f.__name__.__str__.__str__())
+print(print.__name__.__str__.__str__())

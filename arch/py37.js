@@ -77,7 +77,8 @@ function code(i, write) {
       dbg("  - w_ref(Py_REFCNT(v) == 1): PyCode");
       return false;
     }
-    const w = refCache[[typeof v, v]];
+    const key = [typeof v, v, v.length];
+    const w = refCache[key];
     if (w !== undefined) {
       if (!(0 <= w && w <= 0x7fffffff)) throw new Error('assert');
       dbg("  - w_ref(entry != NULL):", w);
@@ -85,7 +86,7 @@ function code(i, write) {
       wLong(w);
       return true;
     }
-    refCache[[typeof v, v]] = Object.keys(refCache).length;
+    refCache[key] = Object.keys(refCache).length;
     f[0] |= FLAG_REF;
     dbg("  - w_ref(miss):", Object.keys(refCache).length);
     return false;
@@ -145,11 +146,11 @@ function code(i, write) {
       wLong(v.co_flags);
       dbg("co_code");
       wObject(v.co_code);
-      dbg("co_consts");
+      dbg("co_consts", v.co_consts);
       wObject(v.co_consts);
-      dbg("co_names");
+      dbg("co_names", v.co_names);
       wObject(v.co_names);
-      dbg("co_varnames");
+      dbg("co_varnames", v.co_varnames);
       wObject(v.co_varnames);
       dbg("co_freevars", v.co_freevars);
       wObject(v.co_freevars);
@@ -169,11 +170,6 @@ function code(i, write) {
   };
 
   wObject(i);
-};
-
-const addToTable = (t, i) => {
-  const pos = t.indexOf(i);
-  return pos >= 0 ? pos : t.push(i)-1;
 };
 
 function assembler(co_filename) {
