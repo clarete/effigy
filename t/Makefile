@@ -6,4 +6,4 @@ PYC := $(SRC:.efg=.pyc)
 compile: $(PYC)
 clean:; -rm $(PYC)
 
-%.pyc: %.efg; cd .. ; ./compile t/$<
+%.pyc: %.efg; ../compile $<
