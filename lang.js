@@ -129,9 +129,11 @@ const parserActions = {
   },
 };
 
+const localfile = f => fs.readFileSync(path.join(__dirname, f)).toString();
+
 // 1. Parse the PEG description
 const compiledParserGrammar = peg
-  .pegc(fs.readFileSync(path.resolve('lang.peg')).toString())
+  .pegc(localfile('lang.peg'))
   .bind(parserActions);
 function parse(input) {
   // 2. Match the PEG against source input
@@ -203,8 +205,7 @@ const BIN_OP_MAP = {
    '^': 'binary-xor',
 };
 
-const compiledTranslatorGrammar = peg
-  .pegc(fs.readFileSync(path.resolve('lang.tr')).toString());
+const compiledTranslatorGrammar = peg.pegc(localfile('lang.tr'));
 
 function translateScope(tree) {
   let i = 0;
