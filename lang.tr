@@ -3,11 +3,15 @@
 Module     <- { "Module" ({ Statement+ } / Statement)? }
 Code       <- { "Code" ({ Statement+ } / Statement)? }
 
-Statement  <- { "Statement" (Assignment / IfStm / WhileStm / Function / ExprStm) }
+# Statements & Expression Types
+Statement  <- { "Statement" (Assignment / IfStm / WhileStm / TryStm / Function / ExprStm) }
 Assignment <- { "Assignment" { Expression (Store / StoreLex) } }
 ExprStm    <- Expression
 WhileStm   <- { "WhileStm" { Expression Code } }
 IfStm      <- { "IfStm" { Expression Code Code? } }
+
+TryStm     <- { "TryStm" { Code CatchStm } }
+CatchStm   <- { "CatchStm" { Load Store Code } }
 
 Expression <- Attribute / Logical / BinOp / Call / Lambda / Load / Unary / Value
 

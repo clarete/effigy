@@ -865,7 +865,48 @@ print(f()) # 2
           ],
         }));
       });
-    });
+    });                         // While
+
+    describe('Try/Catch', () => {
+      it("should translate basic case", () => {
+        const tree = parse('try a catch Err as err b');
+        const code = translate(tree);
+
+        expect(code).toEqual(coObj({
+          constants: [null],
+          names: ['a', 'Err', 'err', 'b'],
+          instructions: [
+            /* 00 */ ['setup-except', 6],
+            /* 02 */ ['load-name', 0],   // a
+            /* 04 */ ['pop-block'],
+            /* 06 */ ['jump-forward', 46],
+
+            /* 08 */ ['dup-top'],
+            /* 10 */ ['load-name', 1],   // Err
+            /* 12 */ ['compare-op', 10],
+            /* 14 */ ['pop-jump-if-false', 44],
+            /* 18 */ ['pop-top'],
+            /* 20 */ ['store-name', 2],
+            /* 22 */ ['pop-top'],
+            /* 24 */ ['setup-finally', 6],
+
+            /* 26 */ ['load-name', 3],   // b
+            /* 28 */ ['pop-block'],
+            /* 30 */ ['load-const', 0],
+            /* 32 */ ['load-const', 0],
+
+            /* 34 */ ['store-name', 2],  // err
+            /* 36 */ ['delete-name', 2], // err
+            /* 38 */ ['end-finally'],
+            /* 40 */ ['pop-except'],
+            /* 42 */ ['jump-forward', 2],
+            /* 44 */ ['end-finally'],
+            /* 46 */ ['load-const', 0],
+            /* 48 */ ['return-value'],
+          ],
+        }));
+      });
+    });                         // Try/Catch
 
   });                           // Statement
 });

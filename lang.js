@@ -46,13 +46,13 @@ const trMult = (_, x) => {
     : value;
 };
 
-
 const parserActions = {
   // Minimal transformation for numbers & names
   DEC: (_, x) => toint(x(), 10),
   HEX: (_, x) => toint(x(), 16),
   BIN: (_, x) => toint(join(x()).replace('0b', ''), 2),
   Identifier: (n, x) => ["Load", join(x())],
+  Store: (n, x) => [n, join(x()[1])],
   String: (n, x) => [n, join(x())],
   // Discard if single child
   Logical: lift,
@@ -62,6 +62,8 @@ const parserActions = {
   Statement: tag,
   IfStm: tag,
   WhileStm: tag,
+  TryStm: tag,
+  CatchStm: tag,
   Number: tag,
   BOOL: tag,
   Value: tag,
@@ -362,6 +364,16 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
       emit('store-name', newName(c));
     return true;
   };
+  const del = c => {
+    const scope = getscope();
+    if (scope.deref.includes(c))
+      emit(`delete-deref`, scope.deref.indexOf(c));
+    else if (scope.fast.includes(c))
+      emit('delete-fast', newVarName(c));
+    else
+      emit('delete-name', newName(c));
+    return true;
+  };
   const loadAttr = (c) => {
     const newn = newName(c);
     emit(`load-attr`, newn);
@@ -496,6 +508,49 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
       fix(testLabel, pos());
       fix(loopLabel, pos());
       return true;
+    },
+    TryStm: (_n, _x, visit, node) => {
+      const [code, catchstm] = node[1];
+      const labelsetup = ref();
+      emit('setup-except', labelsetup);
+      visit(code);
+      emit('pop-block');
+      const labelfwd = ref();
+      fix(labelsetup, pos());
+      emit('jump-forward', labelfwd);
+
+      // -- The Exception Block --
+      const [excType, excName, excCode] = catchstm.value[1];
+      emit('dup-top');
+      visit(excType);
+      emit('compare-op', 10);
+      const labelexc = ref();
+      emit('pop-jump-if-false', labelexc);
+      emit('pop-top');
+      visit(excName);
+      emit('pop-top');
+      const fincatchpos = pos();
+      const labelfincatch = ref();
+      emit('setup-finally', labelfincatch);
+
+      visit(excCode);
+      emit('pop-block');
+      fix(labelfincatch, pos() - fincatchpos);
+      loadConst(null);
+      loadConst(null);
+      store(excName.value[0].value);
+      del(excName.value[0].value);
+      emit('end-finally');
+      emit('pop-except');
+      const labelfin = ref();
+      const finpos = pos();
+      emit('jump-forward', labelfin);
+      emit('end-finally');
+
+      fix(labelexc, pos());
+      fix(labelfwd, pos()+1);
+      fix(labelfin, pos() - finpos-1);
+      return false;
     },
 
     // Logical Operators
