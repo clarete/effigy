@@ -436,7 +436,7 @@ function pegc(g) {
         stk.push(e());
       else if (e.key) {
         const action = actions[e.key];
-        const value = action ? action(e.key, () => run(e.value, actions)) : e.value;
+        const value = action ? action(e.key, () => run(e.value, actions), x => run(x, actions), e.value) : e.value;
         stk.push(value);
       } else if (consp(e)) {
         ostkenter();

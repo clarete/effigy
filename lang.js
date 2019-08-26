@@ -464,40 +464,38 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
     List: (_, x) => list(x()),
 
     // Statements
-    IfStm: (_, x) => {
-      const [[label, test], [labelpos, body], elseStm] = x()[1];
-      fix(label, labelpos + (elseStm ? 1 : 0));
-      return [test, body];
+    IfStm: (_, x, visit, node) => {
+      const [test, body, elsestm] = node[1];
+      visit(test.value);        // Visit the test expression
+      const lb0 = ref();
+      emit('pop-jump-if-false', lb0);
+      visit(body.value);        // Visit the body of the statement
+      if (elsestm) {
+        const lb1 = ref();
+        const savedPos = pos();
+        emit('jump-forward', lb1);
+        fix(lb0, pos());
+        visit(elsestm.value);   // Visit the body of `else' branche
+        fix(lb1, pos() - savedPos - 1);
+      } else {
+        fix(lb0, pos());
+      }
+      return true;
     },
-    IfStmTest: (_, x) => {
-      const value = x();
-      const label = ref();
-      emit('pop-jump-if-false', label);
-      return [label, value];
-    },
-    IfStmBody: (_, x) => {
-      const value = x();
-      return [pos(), value];
-    },
-    ElseStm: (_, x) => {
-      const label = ref();
-      const savedPos = pos();
-      emit('jump-forward', label);
-      const value = x();
-      fix(label, pos() - savedPos - 1);
-      return value;
-    },
-
-    WhileStm: (_, x) => {
+    WhileStm: (_, x, visit, node) => {
       const loopLabel = ref();
       const loopPos = pos();
+      const [test, body] = node[1];
       emit('setup-loop', loopLabel);
-      const [[label, test], [labelpos, body]] = x()[1];
+      visit(test.value);
+      const testLabel = ref();
+      emit('pop-jump-if-false', testLabel);
+      visit(body.value);
       emit('jump-absolute', loopPos*2);
       emit('pop-block');
-      fix(label, pos());
+      fix(testLabel, pos());
       fix(loopLabel, pos());
-      return [test, body];
+      return true;
     },
 
     // Logical Operators
