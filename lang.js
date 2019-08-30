@@ -11,8 +11,8 @@ const multi = x => peg.consp(x) && peg.consp(x[0]);
 const rename = ([,v], n) => [n, v];
 
 // Correct associativity for operators
-const leftAssoc = (_, v) => {
-  const x = v();
+const leftAssoc = ({ visit }) => {
+  const x = visit();
   if (!multi(x)) return x;
   if (!multi(x[1])) {
     const [left, [op, right]] = x;
@@ -26,21 +26,21 @@ const leftAssoc = (_, v) => {
 // TODO: right association (for ** operator)
 const rightAssoc = leftAssoc;
 
-const tag = (n, v) => {
-  const value = v();
-  return value !== undefined ? [n, value] : value;
+const tag = ({ visit, action }) => {
+  const value = visit();
+  return value !== undefined ? [action, value] : value;
 };
 
-const lift = (n, v) => {
-  const value = v();
+const lift = ({ visit, action }) => {
+  const value = visit();
   if (value === undefined) return value;
   else if (!multi(value)) return value;
-  else return [n, value];
+  else return [action, value];
 };
 
-const trOne = (_, x) => [x()];
-const trMult = (_, x) => {
-  const value = x();
+const trOne = ({ visit }) => [visit()];
+const trMult = ({ visit }) => {
+  const value = visit();
   return (multi(value[1]))
     ? [value[0]].concat(value[1])
     : value;
@@ -48,12 +48,12 @@ const trMult = (_, x) => {
 
 const parserActions = {
   // Minimal transformation for numbers & names
-  DEC: (_, x) => toint(x(), 10),
-  HEX: (_, x) => toint(x(), 16),
-  BIN: (_, x) => toint(join(x()).replace('0b', ''), 2),
-  Identifier: (n, x) => ["Load", join(x())],
-  Store: (n, x) => [n, join(x()[1])],
-  String: (n, x) => [n, join(x())],
+  DEC: ({ visit }) => toint(visit(), 10),
+  HEX: ({ visit }) => toint(visit(), 16),
+  BIN: ({ visit }) => toint(join(visit()).replace('0b', ''), 2),
+  Identifier: ({ visit }) => ["Load", join(visit())],
+  Store: ({ visit, action }) => [action, join(visit()[1])],
+  String: ({ visit, action }) => [action, join(visit())],
   // Discard if single child
   Logical: lift,
   // Things we want tagged
@@ -79,17 +79,17 @@ const parserActions = {
   ParamsOne: trOne,
   ParamsMult: trMult,
   // Just need to pop the name of the function off the `Load` node
-  Function: (n, x) => {
-    const value = x();
+  Function: ({ visit, action }) => {
+    const value = visit();
     value[0] = value[0][1];
-    return [n, value];
+    return [action, value];
   },
   // Rename
-  Param: (_, x) => rename(x(), 'Param'),
+  Param: ({ visit }) => rename(visit(), 'Param'),
   // Omit unary wrapper if it's not an unary operator
-  Unary: (n, x) => {
-    const value = x();
-    if (UN_OP_MAP[value[0]]) return [n, value];
+  Unary: ({ visit, action }) => {
+    const value = visit();
+    if (UN_OP_MAP[value[0]]) return [action, value];
     return value;
   },
   // Associativity of binary operators
@@ -100,13 +100,13 @@ const parserActions = {
   Factor: leftAssoc,
   Power: rightAssoc,
   // Attribute Access/method call
-  Attribute: (n, v) => {
-    const x = v();
+  Attribute: ({ visit, action }) => {
+    const x = visit();
     if (!multi(x)) return x;
     let head, tail;
     if (multi(x[1])) { ([head, ...[tail]] = x); }
     else { ([head, ...tail] = x); }
-    return [n, [head, ...tail.map(x => {
+    return [action, [head, ...tail.map(x => {
       if (x[0] === 'Load') return rename(x, 'LoadAttr');
       if (x[0] === 'Call') {
         if (multi(x[1]))
@@ -119,14 +119,14 @@ const parserActions = {
   },
   // Move variable name after expression and add a `Store' node
   // instead of keeping the original `Identifier'.
-  Assignment: (n, x) => {
-    const [identifier, expression] = x();
-    return [n, [expression, rename(identifier, "Store")]];
+  Assignment: ({ visit, action }) => {
+    const [identifier, expression] = visit();
+    return [action, [expression, rename(identifier, "Store")]];
   },
   // Lexical Assignment: Rename top node to just assignment & rename
   // store instruction to storeLex
-  LexAssignment: (n, x) => {
-    const [identifier, expression] = x();
+  LexAssignment: ({ visit, action }) => {
+    const [identifier, expression] = visit();
     return ['Assignment', [expression, rename(identifier, "StoreLex")]];
   },
 };
@@ -225,9 +225,9 @@ function translateScope(tree) {
   const entersym = node => symstk.push(newsymtable({ node }));
   const leavesym = () => symstk.pop();
 
-  const _func = (n, x) => {
-    entersym(n.toLowerCase());
-    const v = x();
+  const _func = ({ visit, action }) => {
+    entersym(action.toLowerCase());
+    const v = visit();
     const s = leavesym();
     currstk().children.push(s);
     map[i++] = s;
@@ -235,37 +235,36 @@ function translateScope(tree) {
     return v;
   };
   const symActions = {
-    Atom: (_, x) => x(),
-    Param: (_, x) => {
-      const value = x();
+    Param: ({ visit }) => {
+      const value = visit();
       addToTable(currstk().defs, value[1]);
       return value;
     },
-    Store: (_, x) => {
-      const value = x();
+    Store: ({ visit }) => {
+      const value = visit();
       addToTable(currstk().defs, value[1]);
       return value;
     },
-    StoreLex: (_, x) => {
-      const value = x();
+    StoreLex: ({ visit }) => {
+      const value = visit();
       addToTable(currstk().defs, value[1]);
       addToTable(currstk().lex, value[1]);
       return value;
     },
-    Load: (_, x) =>  {
-      const value = x();
+    Load: ({ visit }) =>  {
+      const value = visit();
       addToTable(currstk().uses, value[1]);
       return value;
     },
-    Lambda: (n, x) => _func(n, x),
-    Function: (n, x) => _func(n, x),
-    Attribute: (n, x) => {
+    Lambda: ({ visit, action }) => _func({ visit, action }),
+    Function: ({ visit, action }) => _func({ visit, action }),
+    Attribute: ({ visit, action }) => {
       // Flatten output of + operator :/
-      const v = x();
-      if (!multi(v[1][1])) return [n, v[1]];
+      const v = visit();
+      if (!multi(v[1][1])) return [action, v[1]];
       const newl = v[1][1];
       newl.unshift(v[1][0]);
-      return [n, newl];
+      return [action, newl];
     },
   };
 
@@ -451,32 +450,32 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
     return leave();
   };
   const actions = {
-    Module: (_, x) => module(x),
-    ScopeId: (_, x, s) => scopeId(x, s),
-    Load: (_, x) => { const v = x(); load(v[1]); return v; },
-    LoadMethod: (_, x) => loadMethod(x()[1]),
-    Store: (_, x) => { const v = x(); store(v[1]); return v; },
-    StoreLex: (_, x) => { const v = x(); store(v[1]); return v; },
+    Module: ({ visit }) => module(visit),
+    ScopeId: ({ visit }) => scopeId(visit),
+    Load: ({ visit }) => { const v = visit(); load(v[1]); return v; },
+    LoadMethod: ({ visit }) => loadMethod(visit()[1]),
+    Store: ({ visit }) => { const v = visit(); store(v[1]); return v; },
+    StoreLex: ({ visit }) => { const v = visit(); store(v[1]); return v; },
 
     // Call Site Rule application
-    Call: (_, x) => call('function', x()),
-    MethodCall: (_, x) => call('method', x()),
+    Call: ({ visit }) => call('function', visit()),
+    MethodCall: ({ visit }) => call('method', visit()),
 
     // Parameter Rule application
-    Param: (_, x) => newVarName(x()[1]),
+    Param: ({ visit }) => newVarName(visit()[1]),
 
     // Callable Definition
-    Lambda: (n, x) => func(n, x),
-    Function: (n, x) => func(n, x),
+    Lambda: ({ visit, action }) => func(action, visit),
+    Function: ({ visit, action }) => func(action, visit),
 
     // Values & Expressions
-    Number: (_, x) => loadConst(x()[1]),
-    String: (_, x) => loadConst(x()[1]),
-    Boolean: (_, x) => loadConst({ true: true, false: false }[x()[1]]),
-    List: (_, x) => list(x()),
+    Number: ({ visit }) => loadConst(visit()[1]),
+    String: ({ visit }) => loadConst(visit()[1]),
+    Boolean: ({ visit }) => loadConst({ true: true, false: false }[visit()[1]]),
+    List: ({ visit }) => list(visit()),
 
     // Statements
-    IfStm: (_, x, visit, node) => {
+    IfStm: ({ visit, node }) => {
       const [test, body, elsestm] = node[1];
       visit(test.value);        // Visit the test expression
       const lb0 = ref();
@@ -494,7 +493,7 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
       }
       return true;
     },
-    WhileStm: (_, x, visit, node) => {
+    WhileStm: ({ visit, node }) => {
       const loopLabel = ref();
       const loopPos = pos();
       const [test, body] = node[1];
@@ -509,7 +508,7 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
       fix(loopLabel, pos());
       return true;
     },
-    TryStm: (_n, _x, visit, node) => {
+    TryStm: ({ visit, node }) => {
       const [code, catchstm] = node[1];
       const labelsetup = ref();
       emit('setup-except', labelsetup);
@@ -554,29 +553,29 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
     },
 
     // Logical Operators
-    Logical: (_, x) => {
-      const value = x()[1];
+    Logical: ({ visit }) => {
+      const value = visit()[1];
       for (const [label, post] of value[1])
         fix(label, post);
       return value;
     },
-    LogicalTwo: (_, x) => [x()],
-    LogicalOp: (_, x) => {
+    LogicalTwo: ({ visit }) => [visit()],
+    LogicalOp: ({ visit }) => {
       const label = ref();
       const opcs = { and: 'jump-if-false-or-pop', or: 'jump-if-true-or-pop' };
-      emit(opcs[x()], label);
+      emit(opcs[visit()], label);
       return label;
     },
-    LogicalRd: (_, x) => { x(); return pos(); },
+    LogicalRd: ({ visit }) => { visit(); return pos(); },
 
     // Operators
-    LoadAttr: (_, x) => loadAttr(x()[1]),
-    BinOp: (_, x) => {
-      const value = x();
+    LoadAttr: ({ visit }) => loadAttr(visit()[1]),
+    BinOp: ({ visit }) => {
+      const value = visit();
       emit(BIN_OP_MAP[value[2]]);
       return value;
     },
-    Unary: (_, x) => emit(UN_OP_MAP[x()[1][0]]),
+    Unary: ({ visit }) => emit(UN_OP_MAP[visit()[1][0]]),
   };
   // 3.2. Traverse parse tree with transformation grammar
   const g = compiledTranslatorGrammar.bindl(actions);

@@ -436,8 +436,13 @@ function pegc(g) {
         stk.push(e());
       else if (e.key) {
         const action = actions[e.key];
-        const value = action ? action(e.key, () => run(e.value, actions), x => run(x, actions), e.value) : e.value;
-        stk.push(value);
+        if (action) {
+          const visit = n => run(n === undefined ? e.value : n, actions);
+          const options = { action: e.key, node: e.value, visit };
+          stk.push(action(options));
+        } else {
+          stk.push(e.value);
+        }
       } else if (consp(e)) {
         ostkenter();
         stk.push(new L);

@@ -15,9 +15,11 @@ const {
   lst,
 } = require("../peg");
 
+// Join chars together if they're an array
+const join = x => Array.isArray(x) && x.join('') || x;
+
 describe('Semantic Actions', () => {
   it("should something", () => {
-    const j = x => Array.isArray(x) && x.join('') || x;
     const c = pegc(
       ' L <- _ I (_S I)*   \n' +
       ' I <- [0-9]+ _      \n' +
@@ -25,7 +27,7 @@ describe('Semantic Actions', () => {
       ' _ <- [ \t\n\r]*'
     );
     const r = c.bind({
-      I: (_, x) => parseInt(j(x()), 10),
+      I: ({ visit }) => parseInt(join(visit()), 10),
     });
     expect(r(" 100 , 200 ")).toEqual([100, 200]);
   });
@@ -33,13 +35,11 @@ describe('Semantic Actions', () => {
 
 describe("List matcher", () => {
   it("should work in tandem with char matcher", () => {
-    // Join chars together if they're an array
-    const fj = (x) => Array.isArray(x) && x.join('') || x;
     // Actions to be triggered by the non terminals of the parsing
     // grammar
     const parseActions = {
-      N: (_, x) => parseInt(fj(x()), 10),
-      P: (_, x) => '+',
+      N: ({ node }) => parseInt(join(node), 10),
+      P: () => '+',
     };
     // Grammar for parsing something that resembles a calculator
     const pg = pegc(
@@ -118,7 +118,7 @@ describe("List matcher", () => {
 
   it("should parse atom inside list", () => {
     const g = pegc('S <- { "A" }');
-    const r = g.bindl({ S: (_, x) => `y${x()}y` });
+    const r = g.bindl({ S: ({ visit }) => `y${visit()}y` });
     expect(r(["A"])).toBe("yAy");
   });
 });
@@ -132,12 +132,10 @@ describe("input parser", () => {
         'U <- "c" V  \n' +
         'V <- "d"+   \n'
       );
-      const _x = (e, x) => [e + '.foo', x()];
-      const aa = { S: _x, T: _x, U: _x, V: _x };
-      gg.bind(aa)("abbbcdcdd");
+      gg.bind({})("abbbcdcdd");
 
       const g = pegc("Num <- [0-9]+");
-      const a = { Num: (_, x) => parseInt(x(), 10) };
+      const a = { Num: ({ visit }) => parseInt(visit(), 10) };
       const r = g.bind(a);
       const c = r("1");
       expect(c).toBe(1);
