@@ -1,0 +1,9 @@
+try
+  1 / 0
+catch ZeroDivisionError as exc
+  print(exc)
+
+try
+  print("tudo bem")
+catch Exception as exc
+  print(exc)
