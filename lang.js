@@ -460,6 +460,7 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
     LoadMethod: ({ visit }) => loadMethod(visit()[1]),
     Store: ({ visit }) => { const v = visit(); store(v[1]); return v; },
     StoreLex: ({ visit }) => { const v = visit(); store(v[1]); return v; },
+    Break: ({ visit }) => { emit('break-loop'); return visit(); },
 
     // Call Site Rule application
     Call: ({ visit }) => call('function', visit()),

@@ -50,6 +50,7 @@ module.exports.OP_INPLACE_RSHIFT           = 76;
 module.exports.OP_INPLACE_AND              = 77;
 module.exports.OP_INPLACE_XOR              = 78;
 module.exports.OP_INPLACE_OR               = 79;
+module.exports.OP_BREAK_LOOP               = 80;
 module.exports.OP_WITH_CLEANUP_START       = 81;
 module.exports.OP_WITH_CLEANUP_FINISH      = 82;
 module.exports.OP_RETURN_VALUE             = 83;

@@ -865,6 +865,26 @@ print(f()) # 2
           ],
         }));
       });
+
+      it("should translate break statements", () => {
+        const tree = parse('while true break');
+        const code = translate(tree);
+
+        expect(code).toEqual(coObj({
+          constants: [true, null],
+          instructions: [
+            ['setup-loop', 10],
+            ['load-const', 0],
+            ['pop-jump-if-false', 12],
+            ['break-loop'],
+            ['jump-absolute', 2],
+            ['pop-block'],
+            ['load-const', 1],
+            ['return-value'],
+          ],
+        }));
+      });
+
     });                         // While
 
     describe('Try/Catch', () => {
