@@ -36,7 +36,7 @@ ParamsNone      <-
 CallParams      <- _PROP (ListMult / ListOne / ListNone) _PRCL
 
 # Statements
-Statement       <- ReturnStm / WhileStm / ForStm / IfStm / TryStm / Assignment / LexAssignment / ExprStm
+Statement       <- BREAK / CONTINUE / ReturnStm / WhileStm / ForStm / IfStm / TryStm / Assignment / LexAssignment / ExprStm
 ExprStm         <- Expression
 Assignment      <- Identifier _ASSIGN Expression
 LexAssignment   <- _LET Identifier _ASSIGN Expression
@@ -75,8 +75,8 @@ HEX             <- '0x' [0-9a-fA-F]+       _
 BOOL            <- ('true' / 'false')      _
 
 # Keywords
-_BREAK          <- 'break'        _
-_CONTINUE       <- 'continue'     _
+BREAK          <- 'break'         _
+CONTINUE       <- 'continue'      _
 _ELSE           <- 'else'         _
 _FOR            <- 'for'          _
 _FN             <- 'fn'           _
