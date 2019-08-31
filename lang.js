@@ -181,7 +181,7 @@ function dummyAssembler() {
   const labels = [];
   const ref = () => { labels.push(pos()); return labels.length-1; };
   const pos = () => curr().instructions.length;
-  const fix = (l, p) => curr().instructions[labels[l]][1] = p * 2;
+  const fix = (l, p) => curr().instructions[labels[l]][1] = p;
   // -- Basic interface for assembler
   return { enter, leave, emit, attr, ref, pos, fix };
 }
@@ -335,6 +335,10 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
   const pushscope = s => scopes.push(symtable[s]);
   const getscope = () => scopes[scopes.length-1];
   const popscope = () => scopes.pop();
+  // -- Labels
+  const fixsize = (l, p) => fix(l, p * 2);
+  const fixjabs = label => fixsize(label, pos());
+  const fixjrel = (label, start) => fixsize(label, Math.abs(pos() - start));
   // -- Emit instructions for accessing variables
   const loadConst = c => {
     const newc = newConst(c);
@@ -483,40 +487,47 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
       visit(body.value);        // Visit the body of the statement
       if (elsestm) {
         const lb1 = ref();
-        const savedPos = pos();
         emit('jump-forward', lb1);
-        fix(lb0, pos());
+        const savedPos = pos();
+        fixjabs(lb0);
         visit(elsestm.value);   // Visit the body of `else' branche
-        fix(lb1, pos() - savedPos - 1);
+        fixjrel(lb1, savedPos);
       } else {
-        fix(lb0, pos());
+        fixjabs(lb0);
       }
       return true;
     },
     WhileStm: ({ visit, node }) => {
-      const loopLabel = ref();
-      const loopPos = pos();
       const [test, body] = node[1];
-      emit('setup-loop', loopLabel);
+      const setupLabel = ref();
+      emit('setup-loop', setupLabel);
+
+      const loopStart = pos();
       visit(test.value);
       const testLabel = ref();
       emit('pop-jump-if-false', testLabel);
       visit(body.value);
-      emit('jump-absolute', loopPos*2);
+      const jumpLabel = ref();
+      emit('jump-absolute', jumpLabel);
       emit('pop-block');
-      fix(testLabel, pos());
-      fix(loopLabel, pos());
+
+      fixjabs(testLabel);
+      fixsize(jumpLabel, loopStart);
+      fixjrel(setupLabel, loopStart+1);
       return true;
     },
+
     TryStm: ({ visit, node }) => {
       const [code, catchstm] = node[1];
-      const labelsetup = ref();
-      emit('setup-except', labelsetup);
+      const labelSetup = ref();
+      const exceptStart = pos();
+      emit('setup-except', labelSetup);
       visit(code);
       emit('pop-block');
-      const labelfwd = ref();
-      fix(labelsetup, pos());
-      emit('jump-forward', labelfwd);
+      fixjrel(labelSetup, exceptStart);
+      const labelfwd0 = ref();
+      emit('jump-forward', labelfwd0);
+      const fwd0start = pos();
 
       // -- The Exception Block --
       const [excType, excName, excCode] = catchstm.value[1];
@@ -531,24 +542,22 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
       const fincatchpos = pos();
       const labelfincatch = ref();
       emit('setup-finally', labelfincatch);
-
       visit(excCode);
       emit('pop-block');
-      fix(labelfincatch, pos() - fincatchpos);
+      fixjrel(labelfincatch, fincatchpos);
       loadConst(null);
       loadConst(null);
       store(excName.value[0].value);
       del(excName.value[0].value);
       emit('end-finally');
       emit('pop-except');
-      const labelfin = ref();
-      const finpos = pos();
-      emit('jump-forward', labelfin);
+      const labelfwd1 = ref();
+      emit('jump-forward', labelfwd1);
+      const fwd1start = pos();
+      fixjabs(labelexc);
       emit('end-finally');
-
-      fix(labelexc, pos());
-      fix(labelfwd, pos()+1);
-      fix(labelfin, pos() - finpos-1);
+      fixjrel(labelfwd0, fwd0start);
+      fixjrel(labelfwd1, fwd1start);
       return false;
     },
 
@@ -556,7 +565,7 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
     Logical: ({ visit }) => {
       const value = visit()[1];
       for (const [label, post] of value[1])
-        fix(label, post);
+        fixsize(label, post);
       return value;
     },
     LogicalTwo: ({ visit }) => [visit()],

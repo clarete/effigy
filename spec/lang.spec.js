@@ -834,13 +834,13 @@ print(f()) # 2
         expect(code).toEqual(coObj({
           constants: [true, 1, 2, null],
           instructions: [
-            ['load-const', 0],
-            ['pop-jump-if-false', 8],
-            ['load-const', 1],
-            ['jump-forward', 2],
-            ['load-const', 2],
-            ['load-const', 3],
-            ['return-value'],
+            /* 02 */ ['load-const', 0],
+            /* 04 */ ['pop-jump-if-false', 8],
+            /* 06 */ ['load-const', 1],
+            /* 08 */ ['jump-forward', 2],
+            /* 10 */ ['load-const', 2],
+            /* 12 */ ['load-const', 3],
+            /* 14 */ ['return-value'],
           ],
         }));
       });
@@ -854,14 +854,14 @@ print(f()) # 2
         expect(code).toEqual(coObj({
           constants: [true, 1, null],
           instructions: [
-            ['setup-loop', 12],
-            ['load-const', 0],
-            ['pop-jump-if-false', 12],
-            ['load-const', 1],
-            ['jump-absolute', 0],
-            ['pop-block'],
-            ['load-const', 2],
-            ['return-value'],
+            /* 02 */ ['setup-loop', 8],
+            /* 04 */ ['load-const', 0],
+            /* 06 */ ['pop-jump-if-false', 12],
+            /* 08 */ ['load-const', 1],
+            /* 10 */ ['jump-absolute', 2],
+            /* 12 */ ['pop-block'],
+            /* 14 */ ['load-const', 2],
+            /* 16 */ ['return-value'],
           ],
         }));
       });
@@ -879,12 +879,12 @@ print(f()) # 2
             /* 00 */ ['setup-except', 6],
             /* 02 */ ['load-name', 0],   // a
             /* 04 */ ['pop-block'],
-            /* 06 */ ['jump-forward', 46],
+            /* 06 */ ['jump-forward', 36],
 
             /* 08 */ ['dup-top'],
             /* 10 */ ['load-name', 1],   // Err
             /* 12 */ ['compare-op', 10],
-            /* 14 */ ['pop-jump-if-false', 44],
+            /* 14 */ ['pop-jump-if-false', 42],
             /* 18 */ ['pop-top'],
             /* 20 */ ['store-name', 2],
             /* 22 */ ['pop-top'],
@@ -901,6 +901,7 @@ print(f()) # 2
             /* 40 */ ['pop-except'],
             /* 42 */ ['jump-forward', 2],
             /* 44 */ ['end-finally'],
+
             /* 46 */ ['load-const', 0],
             /* 48 */ ['return-value'],
           ],

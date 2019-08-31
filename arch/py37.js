@@ -177,7 +177,7 @@ function assembler(co_filename) {
   const code = ({
     co_name = "",
     co_flags = 0,
-    co_stacksize = 5, // wat
+    co_stacksize = 10, // wat
   }) => [
     new PyCode({
       co_flags, co_stacksize, co_name, co_filename,
@@ -224,7 +224,7 @@ function assembler(co_filename) {
   const labels = [];
   const ref = () => { labels.push(pos()); return labels.length-1; };
   const pos = () => curr()[1].length;
-  const fix = (l, p) => curr()[1][labels[l]][1] = p * 2;
+  const fix = (l, p) => curr()[1][labels[l]][1] = p;
   // -- Basic interface for assembler
   return { enter, leave, emit, attr, backtrack, ref, pos, fix };
 }
