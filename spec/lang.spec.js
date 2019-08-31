@@ -854,7 +854,7 @@ print(f()) # 2
         expect(code).toEqual(coObj({
           constants: [true, 1, null],
           instructions: [
-            /* 02 */ ['setup-loop', 8],
+            /* 02 */ ['setup-loop', 10],
             /* 04 */ ['load-const', 0],
             /* 06 */ ['pop-jump-if-false', 12],
             /* 08 */ ['load-const', 1],

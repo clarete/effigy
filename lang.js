@@ -501,7 +501,6 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
       const [test, body] = node[1];
       const setupLabel = ref();
       emit('setup-loop', setupLabel);
-
       const loopStart = pos();
       visit(test.value);
       const testLabel = ref();
@@ -513,7 +512,7 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
 
       fixjabs(testLabel);
       fixsize(jumpLabel, loopStart);
-      fixjrel(setupLabel, loopStart+1);
+      fixjrel(setupLabel, loopStart);
       return true;
     },
 
