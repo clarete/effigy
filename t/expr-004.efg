@@ -1,5 +1,7 @@
 # Built-in types
 
+# null
+print(null)
 # booleans
 print(true); print(false)
 # strings

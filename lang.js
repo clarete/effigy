@@ -484,6 +484,7 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
     Number: ({ visit }) => loadConst(visit()[1]),
     String: ({ visit }) => loadConst(visit()[1]),
     Boolean: ({ visit }) => loadConst({ true: true, false: false }[visit()[1]]),
+    Null: ({ visit }) => loadConst(null) && visit(),
     List: ({ visit }) => list(visit()),
 
     // Statements

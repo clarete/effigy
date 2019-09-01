@@ -57,7 +57,7 @@ Load            <- Identifier
 Store           <- Identifier
 
 # Values
-Value           <- Number / BOOL / String / List
+Value           <- Number / BOOL / NULL / String / List
 Number          <- BIN / HEX / FLOAT / DEC
 String          <- _DQUOTE (!_DQUOTE .)* _DQUOTE _
 List            <- _SBOP (ListMult / ListOne / ListNone) _SBCL
@@ -74,6 +74,7 @@ FLOAT           <- [0-9]* '.' [0-9]+       _
 BIN             <- '0b' [0-1]+             _
 HEX             <- '0x' [0-9a-fA-F]+       _
 BOOL            <- ('true' / 'false')      _
+NULL            <- 'null'                  _
 
 # Keywords
 BREAK          <- 'break'         _

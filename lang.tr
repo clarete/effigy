@@ -48,11 +48,12 @@ Call       <- { "Call" { Expression CallParams } }
 CallParams <- { Expression+ }?
 
 # Value rules
-Value      <- { "Value" (Number / String / Boolean / List) }
+Value      <- { "Value" (Number / String / Boolean / List / Null) }
 Number     <- { "Number" Atom }
 String     <- { "String" Atom }
 Boolean    <- { "BOOL" Atom }
 List       <- { "List" { Expression* }? }
+Null       <- "null"
 
 Load       <- { "Load" Atom  }
 Store      <- { "Store" Atom  }
