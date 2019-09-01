@@ -1,0 +1,52 @@
+* Effigy
+
+  This is an experiment on building a small language compiler on top
+  of a home brewed parsing expression grammar implementation.
+
+  The language implemented in this project, effigy, currently compiles
+  down to a subset of the Python 3.7 bytecode format. More
+  specifically, the Effigy compiler produces ~.pyc~ files.
+
+  Effigy's runtime is the Python 3.7 Virtual Machine. The difference
+  is just how the bytecode gets generated. Most idioms like declaring
+  literals, calling functions, assigning variables etc have the exact
+  same semantics as in regular Python code.
+
+  Effigy differs from Python on the use of functions for control flow
+  a little more often and the absence of classes (might be added
+  later).
+
+  More to come!
+
+** Host Language
+
+   Although the first target of the little compiler is a subset of
+   Python, JavaScript was chosen as the host language for a few
+   reasons:
+
+   1. I didn't want to do it in Python because it'd be very tempting
+      to use one of its modules for parsing, scope analysis or code
+      generation. I wanted to implement all the pieces of the compiler
+      to be able to reason how far I could leverage the PEG to do
+      those tasks.
+
+   2. Python and JavaScript have very similar semantics for closures
+      but present slight differences in how side-effect (assignment)
+      of values declared in enclosed scopes work. Java Script
+      separates assignment from declaration, Python provides the
+      ~nonlocal~ keyword.
+
+      I wanted something right in the middle for Effigy: Assignment is
+      coupled to declaring a variable, but provides the keyword ~let~
+      to mark names to be saved as closures so assignments in deeper
+      scopes will know its not a new value.
+
+   3. It doesn't really matter. The goal is to rewrite Effigy with
+      Effigy.
+      
+** Resources
+*** On Parsing Expression Grammars
+*** On the Python Compiler & Bytecode Format
+    * https://devguide.python.org/compiler
+    * https://github.com/python/cpython/tree/master/Python
+    * https://codewords.recurse.com/issues/seven/dragon-taming-with-tailbiter-a-bytecode-compiler
