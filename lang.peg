@@ -36,7 +36,7 @@ ParamsNone      <-
 CallParams      <- _PROP (ListMult / ListOne / ListNone) _PRCL
 
 # Statements
-Statement       <- BREAK / CONTINUE / ReturnStm / WhileStm / ForStm / IfStm / TryStm / Assignment / LexAssignment / ExprStm
+Statement       <- BREAK / CONTINUE / ReturnStm / ThrowStm / WhileStm / ForStm / IfStm / TryStm / Assignment / LexAssignment / ExprStm
 ExprStm         <- Expression
 Assignment      <- Identifier _ASSIGN Expression
 LexAssignment   <- _LET Identifier _ASSIGN Expression
@@ -48,6 +48,7 @@ WhileStm        <- _WHILE Expression Code
 IfStm           <- _IF Expression Code ElseStm?
 ElseStm         <- _ELSE Code
 ReturnStm       <- _RETURN Expression
+ThrowStm        <- _THROW Expression
 TryStm          <- _TRY Code CatchStm+
 CatchStm        <- (_CATCH Load _AS Store Code)
 
@@ -83,6 +84,7 @@ _FN             <- 'fn'           _
 _WHILE          <- 'while'        _
 _IF             <- 'if'           _
 _RETURN         <- 'return'       _
+_THROW          <- 'throw'        _
 _LET            <- 'let'          _
 _TRY            <- 'try'          _
 _CATCH          <- 'catch'        _

@@ -1,0 +1,8 @@
+fn somethingWithReturn() {
+  print("first is printed out")
+  return 0
+  print("second isn't really")
+}
+
+# if __name__ == '__main__'
+somethingWithReturn()

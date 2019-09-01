@@ -64,6 +64,8 @@ const parserActions = {
   WhileStm: tag,
   TryStm: tag,
   CatchStm: tag,
+  ThrowStm: tag,
+  ReturnStm: tag,
   Number: tag,
   BOOL: tag,
   Value: tag,
@@ -472,6 +474,11 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
     // Callable Definition
     Lambda: ({ visit, action }) => func(action, visit),
     Function: ({ visit, action }) => func(action, visit),
+    ReturnStm: ({ visit, node }) => {
+      const value = visit();
+      emit('return-value');
+      return value;
+    },
 
     // Values & Expressions
     Number: ({ visit }) => loadConst(visit()[1]),
@@ -516,7 +523,11 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
       fixjrel(setupLabel, loopStart);
       return true;
     },
-
+    ThrowStm: ({ visit, node }) => {
+      const value = visit();
+      emit('raise-varargs', 1);
+      return value;
+    },
     TryStm: ({ visit, node }) => {
       const [code, catchstm] = node[1];
       const labelSetup = ref();

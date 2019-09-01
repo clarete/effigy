@@ -4,6 +4,6 @@ catch ZeroDivisionError as exc
   print(exc)
 
 try
-  print("tudo bem")
+  throw Exception("tudo bem")
 catch Exception as exc
-  print(exc)
+  print(str(exc) + " fi")

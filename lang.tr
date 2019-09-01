@@ -4,13 +4,15 @@ Module     <- { "Module" ({ Statement+ } / Statement)? }
 Code       <- { "Code" ({ Statement+ } / Statement)? }
 
 # Statements & Expression Types
-Statement  <- { "Statement" (Assignment / IfStm / WhileStm / TryStm / Function / ExprStm / Break / Continue) }
+Statement  <- { "Statement" (Assignment / IfStm / WhileStm / TryStm / ThrowStm / Function / ReturnStm / ExprStm / Break / Continue) }
 Assignment <- { "Assignment" { Expression (Store / StoreLex) } }
 ExprStm    <- Expression
 WhileStm   <- { "WhileStm" { Expression Code } }
 Break      <- "break"
 Continue   <- "continue"
 IfStm      <- { "IfStm" { Expression Code Code? } }
+ThrowStm   <- { "ThrowStm" Expression }
+ReturnStm  <- { "ReturnStm" Expression }
 
 TryStm     <- { "TryStm" { Code CatchStm } }
 CatchStm   <- { "CatchStm" { Load Store Code } }
