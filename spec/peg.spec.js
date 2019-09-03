@@ -1,4 +1,7 @@
 const {
+  MatchError,
+  PredicateError,
+
   zeroOrMore,
   oneOrMore,
   choice,
@@ -462,21 +465,21 @@ describe("peg primitives", () => {
   });
   describe("Choice Operator (/)", () => {
     it("should return last error exhaust all options", () => {
-      function err0() { throw new Error("err0"); }
-      function err1() { throw new Error("err1"); }
-      function err2() { throw new Error("err2"); }
-      expect(() => choice(err0, err1, err2)).toThrow(new Error("err2"));
+      function err0() { throw new MatchError("err0"); }
+      function err1() { throw new MatchError("err1"); }
+      function err2() { throw new MatchError("err2"); }
+      expect(() => choice(err0, err1, err2)).toThrow(new MatchError("err2"));
     });
     it("should select first successful match", () => {
-      function err0() { throw new Error("err0"); }
+      function err0() { throw new MatchError("err0"); }
       function suc1() { return "yay"; }
-      function err2() { throw new Error("err2"); }
+      function err2() { throw new MatchError("err2"); }
       expect(choice(err0, suc1, err2)).toEqual("yay");
     });
   });
   describe("Optional Operator (?)", () => {
     it("should return empty when it doesn't match", () => {
-      function err0() { throw new Error("err0"); }
+      function err0() { throw new MatchError("err0"); }
       expect(optional(err0)).toBe(null);
     });
     it("should result of match on success", () => {
@@ -486,12 +489,12 @@ describe("peg primitives", () => {
   });
   describe("Not Operator (!)", () => {
     it("should return true when it doesn't match", () => {
-      function err0() { throw new Error("err0"); }
+      function err0() { throw new MatchError("err0"); }
       expect(not(err0)).toBe(true);
     });
-    it("should return false when it matches", () => {
+    it("should throw an exception when it matches", () => {
       const success = () => "awessome";
-      expect(() => not(success)).toThrow(new Error);
+      expect(() => not(success)).toThrow(new PredicateError);
     });
   });
   describe("And Operator (&)", () => {
@@ -499,9 +502,13 @@ describe("peg primitives", () => {
       const success = () => "awessome";
       expect(and(success)).toBe(true);
     });
-    it("should return false when it doesn't match", () => {
+    it("should throw an exception when it doesn't match", () => {
+      function err0() { throw new MatchError("err0"); }
+      expect(() => and(err0)).toThrow(new PredicateError);
+    });
+    it("should throw original exception when it fails", () => {
       function err0() { throw new Error("err0"); }
-      expect(() => and(err0)).toThrow(new Error);
+      expect(() => and(err0)).toThrow(new Error("err0"));
     });
   });
 });

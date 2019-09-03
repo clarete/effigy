@@ -1,5 +1,8 @@
 // --- PEG Primitives (Doesn't include lexer) ---
 
+class MatchError extends Error {};
+class PredicateError extends MatchError {};
+
 // Star Operator (*)
 const zeroOrMore = (combinator) => {
   const output = [];
@@ -17,20 +20,29 @@ const choice = (...a) => {
   let last = null;
   for (const nth of a) {
     try { return nth(); }
-    catch (e) { last = e; }
+    catch (e) {
+      if (e instanceof MatchError) last = e;
+      else throw e;
+    }
   }
   throw last;
 };
 // Optional Operator (?)
 const optional = (combinator) => {
   try { return combinator(); }
-  catch (e) { return null; }
+  catch (e) {
+    if (e instanceof MatchError) return null;
+    else throw e;
+  }
 };
 // Not Operator (!)
 const not = (thing) => {
   try { thing(); }
-  catch (e) { return true; }
-  throw new Error;
+  catch (e) {
+    if (e instanceof MatchError) return true;
+    else throw e;
+  }
+  throw new PredicateError;
 };
 // And Operator (&)
 const and = (thing) => not(() => not(thing));
@@ -60,7 +72,7 @@ function scan(source) {
     return x;
   };
 
-  const error = (msg) => { throw new Error(msg + ` at pos ${ffp}`); };
+  const error = (msg) => { throw new MatchError(msg + ` at pos ${ffp}`); };
   const checkeos = () => eos() && error('End of stream');
   const currc = () => source[cursor] || '';
   const nextc = () => checkeos() || ipp(source[cursor]);
@@ -105,7 +117,7 @@ function scan(source) {
 function scanl(tree) {
   let current = tree;
 
-  const error = (m) => { throw new Error(m); };
+  const error = (m) => { throw new MatchError(m); };
   const eos = () => currc() === undefined;
   const checkeos = () => eos() && error('End of stream');
   const testc = (c) => currc() === c;
@@ -468,6 +480,9 @@ function pegc(g) {
 }
 
 module.exports = {
+  // Errors
+  MatchError,
+  PredicateError,
   // Primitives
   zeroOrMore,
   oneOrMore,
