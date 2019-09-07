@@ -212,8 +212,14 @@ function scanl(tree) {
   return {
     Not, Choice, any, list,
     currc, must, error,
+    eos,
   };
 }
+
+// Recursive length
+const reclength = (c) => consp(c)
+  ? c.reduce((acc, curr) => acc + reclength(curr), 0)
+  : 1;
 
 // PEG Parser
 function peg(s) {
@@ -432,8 +438,12 @@ function pegc(g) {
     // the parse tree. That doesn't apply to the first rule though.
     const skipcapture = (s) => Symbol.keyFor(s).startsWith('_');
 
+    // Cache for left recursive calls
+    const lrc = {};
+
     // Recursive Eval
     const matchexpr = (e) => {
+      // require('./dbg')('---------- iter --', s.cursor(), e);
       if (e instanceof PrimFun) {
         return cl(V(prims, e.name)());
       } else if (consp(e) && e[0] instanceof PrimFun) {
@@ -446,13 +456,41 @@ function pegc(g) {
       } else if (typeof e === 'string') {
         return s.must(e);
       } else if (typeof e === 'symbol') {
-        const output = actionfn(e, matchexpr(V(G, e)));
-        return skipcapture(e) ? null : output;
+        if (e !== Symbol.for('E')) {
+          const output = actionfn(e, matchexpr(V(G, e)));
+          return skipcapture(e) ? null : output;
+        }
+
+        // require('./dbg')(`* TO BEGIN WITH ${Symbol.keyFor(e)} [${bound}]`, lrc[e]);
+
+        if (lrc[e] === Symbol.for('Error')) throw new MatchError;
+        if (lrc[e] !== undefined) return actionfn(e, lrc[e]);
+        let current = lrc[e] = Symbol.for('Error'); // E(0).
+
+        while (true) {
+          // require('./dbg')(`* ENTER`, lrc[e]);
+          // const m = matchexpr(V(G, e));
+          const m = s.eos() ? [] : matchexpr(V(G, e));
+          // const m = s.backtrack(() => matchexpr(V(G, e)));
+          // const m = s.eos() ? [] : s.backtrack(() => matchexpr(V(G, e)));
+          // require('./dbg')('* EXIT', m);
+          const mLen = reclength(m);
+          const cLen = current.length ? reclength(current) : 0;
+          // require('./dbg')('      Resu', mLen, m);
+          // require('./dbg')('      Curr', cLen, current);
+          if (mLen > cLen) {
+            lrc[e] = current = m;
+          } else {
+            // require('./dbg')('THE END', current);
+            lrc[e] = undefined;
+            return skipcapture(e) ? null : cl(actionfn(e, current));
+          }
+        }
       }
       throw new Error('Unreachable');
     };
     // Kickoff eval
-    return actionfn(start, matchexpr(G[start]));
+    return matchexpr(start);
   };
 
   const run = (result, actions) => {

@@ -212,6 +212,19 @@ describe("input parser", () => {
   });
 });
 
+describe("left recursion", () => {
+  it("should work with direct left-recursion", () => {
+    const g = pegc("E <- E '+n' / 'n'");
+    const m = g.match("n+n+n");
+    expect(m).toEqual(['E', [['E', [['E', 'n'], '+n']], '+n']]);
+  });
+  it("should work with indirect left-recursion", () => {
+    const g = pegc('E <- S / "n"  \n' +
+                   'S <- E "+n"   \n');
+    expect(g.match("n")).toEqual(['E', 'n']);
+  });
+});
+
 describe("peg parser", () => {
   describe("#Grammar", () => {
     it("should match one definition", () => {
