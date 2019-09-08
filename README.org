@@ -45,7 +45,11 @@
       Effigy.
       
 ** Resources
-*** On Parsing Expression Grammars
+*** On Parsing & Parsing Expression Grammars
+    * [[https://bford.info/pub/lang/peg.pdf][Parsing Expression Grammars: A Recognition-Based Syntactic Foundation]]
+    * [[http://www.lua.inf.puc-rio.br/publications/mascarenhas11parsing.pdf][Parsing Expression Grammars for Structured Data]]
+    * [[http://www.vpri.org/pdf/tr2010003_PEG.pdf][PEG-based transformer provides front-, middle and back-end stages in a simple compiler]]
+    * [[https://ohmlang.github.io/pubs/dls2016/modular-semantic-actions.pdf][Modular Semantic Actions]]
 *** On the Python Compiler & Bytecode Format
     * https://devguide.python.org/compiler
     * https://github.com/python/cpython/tree/master/Python
