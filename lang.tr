@@ -28,7 +28,7 @@ LogicalRd  <- Expression
 
 BinOp      <- { "BinOp" Expression Atom Expression }
 Unary      <- { "Unary" { Atom Expression } }
-Attribute  <- { "Attribute" { Load (LoadAttr / MethodCall)+ } }
+Attribute  <- { "Attribute" { Expression (LoadAttr / MethodCall)+ } }
 LoadAttr   <- { "LoadAttr" Atom }
 LoadMethod <- { "LoadMethod" Atom }
 MethodCall <- { "MethodCall" { LoadMethod CallParams } }

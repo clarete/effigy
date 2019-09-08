@@ -375,43 +375,28 @@ describe("Translate", () => {
     });
 
     describe("Attribute", () => {
-      it("should parse deep attribute access correctly", () => {
-        const tree0 = parse('print.__doc__');
-        expect(tree0).toEqual(
-          ['Module',
-           ['Statement',
-            ['Attribute',
-             [['Load', 'print'],
-              ['LoadAttr', '__doc__']]]]]);
-        const tree1 = parse('print.__doc__.__str__().__str__');
-        expect(tree1).toEqual(
-          ['Module',
-           ['Statement',
-            ['Attribute',
-             [['Load', 'print'],
-              ['LoadAttr', '__doc__'],
-              ['MethodCall', [['LoadMethod', '__str__']]],
-              ['LoadAttr', '__str__']]]]]);
-      });
+      it("should work with function calls", () => {
+        const tree = parse('a(b.c(d)).e([]).f');
+        const code = translate(tree);
 
-      it("should translate deep attribute access correctly", () => {
-        const tree = parse('print.__doc__.zfill');
-        const [,scope] = translateScope(tree);
-
-        expect(tree).toEqual(
-          ['Module',
-           ['Statement',
-            ['Attribute',
-             [['Load', 'print'],
-              ['LoadAttr', '__doc__'],
-              ['LoadAttr', 'zfill']]]]]);
-        expect(scope).toEqual(
-          ['Module',
-           ['Statement',
-            ['Attribute',
-             [['Load', 'print'],
-              ['LoadAttr', '__doc__'],
-              ['LoadAttr', 'zfill']]]]]);
+        expect(code).toEqual(coObj({
+          constants: [null],
+          names: ['a', 'b', 'c', 'd', 'e', 'f'],
+          instructions: [
+            ['load-name', 0],   // a
+            ['load-name', 1],   // b
+            ['load-method', 2], // c
+            ['load-name', 3],   // d
+            ['call-method', 1],
+            ['call-function', 1],
+            ['load-method', 4], // e
+            ['build-list', 0],
+            ['call-method', 1],
+            ['load-attr', 5],   // f
+            ['load-const', 0],
+            ['return-value'],
+          ],
+        }));
       });
 
       it("should provide attribute access", () => {
