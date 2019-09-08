@@ -223,6 +223,20 @@ describe("left recursion", () => {
                    'S <- E "+n"   \n');
     expect(g.match("n")).toEqual(['E', 'n']);
   });
+  fit("should work with left-right-recursion", () => {
+    const g = pegc("E <- E '+' E / 'n'");
+    // expect(g.match("n")).toEqual(['E', 'n']);
+    // expect(g.match("n+n")).toEqual(['E', [['E', 'n'], '+', ['E', 'n']]]);
+    console.log(g.match("n+n+n+n+n+n"));
+    // expect(g.match("n+n+n")).toEqual(['E', [['E', 'n'], '+', [['E', 'n'], '+', ['E', 'n']]]]);
+  });
+  it("should work with mutually left-recursive expressions", () => {
+    const g = pegc("L <- P '.x' / 'x'   \n" +
+                   "P <- P '(n)' / L    \n");
+    // expect(g.match("x")).toEqual(['L', 'x']);
+    console.log(g.match("x.x"));
+    // expect(g.match("x.x(n).x")).toEqual(['E', ['L', 'x']]);
+  });
 });
 
 describe("peg parser", () => {
