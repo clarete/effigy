@@ -17,7 +17,7 @@ ReturnStm  <- { "ReturnStm" Expression }
 TryStm     <- { "TryStm" { Code CatchStm } }
 CatchStm   <- { "CatchStm" { Load Store Code } }
 
-Expression <- Attribute / Logical / BinOp / Call / Lambda / Load / Unary / Value
+Expression <- Attribute / Logical / BinOp / Comparison / Call / Lambda / Load / Unary / Value
 
 # Logical Operators
 Logical    <- { "Logical" { Expression (LogicalTwo / LogicalMult) } }
@@ -27,6 +27,7 @@ LogicalOp  <- Atom
 LogicalRd  <- Expression
 
 BinOp      <- { "BinOp" Expression Atom Expression }
+Comparison <- { "Comparison" Expression Atom Expression }
 Unary      <- { "Unary" { Atom Expression } }
 Attribute  <- { "Attribute" { Expression (LoadAttr / MethodCall)+ } }
 LoadAttr   <- { "LoadAttr" Atom }

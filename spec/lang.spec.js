@@ -338,6 +338,24 @@ describe("Translate", () => {
       });
     });                         // BinOp
 
+    describe("Comparison", () => {
+      it("should support equality", () => {
+        const tree = parse('1 == 1');
+        const code = translate(tree);
+
+        expect(code).toEqual(coObj({
+          constants: [1, null],
+          instructions: [
+            ['load-const', 0],
+            ['load-const', 0],
+            ['compare-op', 2],
+            ['load-const', 1],
+            ['return-value'],
+          ],
+        }));
+      });
+    });
+
     describe("BoolOp", () => {
       it("should work with two operands", () => {
         const tree = parse('true and false');

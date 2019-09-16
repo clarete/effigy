@@ -11,17 +11,19 @@ const multi = x => peg.consp(x) && peg.consp(x[0]);
 const rename = ([,v], n) => [n, v];
 
 // Correct associativity for operators
-const leftAssoc = ({ visit }) => {
+const leftAssocF = (name='BinOp') => ({ visit }) => {
   const x = visit();
   if (!multi(x)) return x;
   if (!multi(x[1])) {
     const [left, [op, right]] = x;
-    return ['BinOp', left, op, right];
+    return [name, left, op, right];
   } else {
     const [head, ...[tail]] = x;
-    return tail.reduce((h, t) => ['BinOp', h, ...t], head);;
+    return tail.reduce((h, t) => [name, h, ...t], head);;
   }
 };
+
+const leftAssoc = leftAssocF('BinOp');
 
 // TODO: right association (for ** operator)
 const rightAssoc = leftAssoc;
@@ -95,9 +97,9 @@ const parserActions = {
     return value;
   },
   // Associativity of binary operators
+  Comparison: leftAssocF('Comparison'),
   BitLogical: leftAssoc,
   BitShifting: leftAssoc,
-  Comparison: leftAssoc,
   Term: leftAssoc,
   Factor: leftAssoc,
   Power: rightAssoc,
@@ -207,6 +209,15 @@ const BIN_OP_MAP = {
    '|': 'binary-or',
    '&': 'binary-and',
    '^': 'binary-xor',
+};
+
+const CMP_OP_MAP = {
+  '<':  0,
+  '<=': 1,
+  '==': 2,
+  '!=': 3,
+  '>':  4,
+  '>=': 5,
 };
 
 const compiledTranslatorGrammar = peg.pegc(localfile('lang.tr'));
@@ -591,6 +602,11 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
 
     // Operators
     LoadAttr: ({ visit }) => loadAttr(visit()[1]),
+    Comparison: ({ visit }) => {
+      const value = visit();
+      emit('compare-op', CMP_OP_MAP[value[2]]);
+      return value;
+    },
     BinOp: ({ visit }) => {
       const value = visit();
       emit(BIN_OP_MAP[value[2]]);
