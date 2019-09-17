@@ -174,14 +174,8 @@ function code(i, write) {
 
 function assembler(co_filename) {
   // Code Object
-  const code = ({
-    co_name = "",
-    co_flags = 0,
-    co_stacksize = 10, // wat
-  }) => [
-    new PyCode({
-      co_flags, co_stacksize, co_name, co_filename,
-    }),
+  const code = ({ co_name = "", co_flags = 0 }) => [
+    new PyCode({ co_flags, co_name, co_filename }),
     [],               // Instructions before being packed into co_code
   ];
   // Support for nested functions
@@ -203,12 +197,16 @@ function assembler(co_filename) {
   // Control scope
   const enter = (...args) => stack.push(code(...args));
   const leave = () => {
+    let depth = 0;
     const [c, instructions] = stack.pop();
     const instrlist = instructions.map(i => {
       const [n, v] = i, opc = opcodeFromString(n);
+      const idepth = stackEffect(n, v, false);
+      depth = Math.max(depth, idepth+depth);
       return v === undefined ? [opc, 0] : [opc, v];
     });
     c.co_code = Buffer.from(instrlist.flat());
+    c.co_stacksize = depth;
     return c;
   };
   // -- Mutator for instructions
@@ -241,9 +239,198 @@ function opcodeFromString(n) {
   return opcodes[`OP_${rename}`];
 }
 
+function stackEffect(opcode, oparg, jump) {
+  switch (opcode) {
+    /* Stack manipulation */
+  case 'pop-top': return -1;
+  case 'rot-two':
+  case 'rot-three': return 0;
+  case 'dup-top': return 1;
+  case 'dup-top-two': return 2;
+
+    /* Unary operators */
+  case 'unary-positive':
+  case 'unary-negative':
+  case 'unary-not':
+  case 'unary-invert': return 0;
+
+  case 'set-add':
+  case 'list-append': return -1;
+  case 'map-add': return -2;
+
+    /* Binary operators */
+  case 'binary-power':
+  case 'binary-multiply':
+  case 'binary-matrix-multiply':
+  case 'binary-modulo':
+  case 'binary-add':
+  case 'binary-subtract':
+  case 'binary-subscr':
+  case 'binary-floor-divide':
+  case 'binary-true-divide': return -1;
+  case 'inplace_floor_divide':
+  case 'inplace_true_divide': return -1;
+
+  case 'inplace-add':
+  case 'inplace-subtract':
+  case 'inplace-multiply':
+  case 'inplace-matrix-multiply':
+  case 'inplace-modulo': return -1;
+  case 'store-subscr': return -3;
+  case 'delete-subscr': return -2;
+
+  case 'binary-lshift':
+  case 'binary-rshift':
+  case 'binary-and':
+  case 'binary-xor':
+  case 'binary-or': return -1;
+  case 'inplace-power': return -1;
+  case 'get-iter': return 0;
+
+  case 'print-expr': return -1;
+  case 'load-build-class': return 1;
+
+  case 'inplace-lshift':
+  case 'inplace-rshift':
+  case 'inplace-and':
+  case 'inplace-xor':
+  case 'inplace-or': return -1;
+  case 'break-loop': return 0;
+  case 'setup-with':
+    /* 1 in the normal flow.
+     * Restore the stack position and push 6 values before jumping to
+     * the handler if an exception be raised. */
+    return jump ? 6 : 1;
+  case 'with-cleanup-start':
+    return 2; /* or 1, depending on TOS */
+  case 'with-cleanup-finish':
+    /* Pop a variable number of values pushed by WITH_CLEANUP_START
+     * + __exit__ or __aexit__. */
+    return -3;
+  case 'return-value': return -1;
+  case 'import-star': return -1;
+  case 'setup-annotations': return 0;
+  case 'yield-value': return 0;
+  case 'yield-from': return -1;
+  case 'pop-block': return 0;
+  case 'pop-except': return -3;
+  case 'end-finally':
+    /* Pop 6 values when an exception was raised. */
+    return -6;
+
+  case 'store-name': return -1;
+  case 'delete-name': return 0;
+  case 'unpack-sequence': return oparg-1;
+  case 'unpack-ex': return (oparg & 0xFF) + (oparg >> 8);
+  case 'for-iter':
+    /* -1 at end of iterator, 1 if continue iterating. */
+    return jump > 0 ? -1 : 1;
+
+  case 'store-attr': return -2;
+  case 'delete-attr': return -1;
+  case 'store-global': return -1;
+  case 'delete-global': return 0;
+  case 'load-const': return 1;
+  case 'load-name': return 1;
+  case 'build-tuple':
+  case 'build-list':
+  case 'build-set':
+  case 'build-string': return 1-oparg;
+
+  case 'build-list-unpack':
+  case 'build-tuple-unpack':
+  case 'build-tuple-unpack-with-call':
+  case 'build-set-unpack':
+  case 'build-map-unpack':
+  case 'build-map-unpack-with-call': return 1 - oparg;
+
+  case 'build-map': return 1 - 2*oparg;
+  case 'build-const-key-map': return -oparg;
+  case 'load-attr': return 0;
+  case 'compare-op': return -1;
+  case 'import-name': return -1;
+  case 'import-from': return 1;
+
+    /* Jumps */
+  case 'jump-forward':
+  case 'jump-absolute': return 0;
+
+  case 'jump-if-true-or-pop':
+  case 'jump-if-false-or-pop':
+    return jump ? 0 : -1;
+
+  case 'pop-jump-if-false':
+  case 'pop-jump-if-true':
+    return -1;
+
+  case 'load-global':
+    return 1;
+
+  case 'continue-loop':
+    return 0;
+  case 'setup-loop':
+    return 0;
+  case 'setup-except':
+  case 'setup-finally':
+    /* 0 in the normal flow.
+     * Restore the stack position and push 6 values before jumping to
+     * the handler if an exception be raised. */
+    return jump ? 6 : 0;
+
+  case 'load-fast': return 1;
+  case 'store-fast': return -1;
+  case 'delete-fast': return 0;
+  case 'raise-varargs': return -oparg;
+
+    /* Functions and calls */
+  case 'call-function': return -(oparg);
+  case 'call-method': return -(oparg)-1;
+  case 'call-function-kw': return -oparg-1;
+  case 'call-function-ex': return -1 - ((oparg & 0x01) != 0);
+  case 'make-function':
+    return -1 - ((oparg & 0x01) != 0) - ((oparg & 0x02) != 0) -
+      ((oparg & 0x04) != 0) - ((oparg & 0x08) != 0);
+  case 'build-slice':
+    if (oparg == 3)
+      return -2;
+    else
+      return -1;
+
+    /* Closures */
+  case 'load-closure': return 1;
+  case 'load-deref':
+  case 'load-classderef': return 1;
+  case 'store-deref': return -1;
+  case 'delete-deref': return 0;
+
+    /* Iterators and generators */
+  case 'get-awaitable':
+    return 0;
+  case 'setup-async-with':
+    /* 0 in the normal flow.
+     * Restore the stack position to the position before the result
+     * of __aenter__ and push 6 values before jumping to the handler
+     * if an exception be raised. */
+    return jump ? -1 + 6 : 0;
+  case 'before-async-with': return 1;
+  case 'get-aiter': return 0;
+  case 'get-anext': return 1;
+  case 'get-yield-from-iter': return 0;
+  // case 'format-value':
+  //   /* If there's a fmt_spec on the stack, we go from 2->1,
+  //      else 1->1. */
+  //   return (oparg & FVS_MASK) == FVS_HAVE_SPEC ? -1 : 0;
+  case 'load-method':
+    return 1;
+  default:
+    throw new Error("Invalid stack effect");
+  }
+}
+
 module.exports = {
   code,
   assembler,
   header,
   HEADER_SIZE,
+  stackEffect,
 };
