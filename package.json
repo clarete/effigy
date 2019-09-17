@@ -1,13 +1,16 @@
 {
-  "name": "effigy",
+  "name": "efgc",
   "version": "0.0.1",
-  "description": "Tiny Language",
-  "main": "compiler",
+  "description": "Teeny tiny compiler",
+  "main": "lang.js",
   "devDependencies": {
     "jasmine": "^3.4.0"
   },
   "scripts": {
     "test": "jasmine"
+  },
+  "bin": {
+    "efgc": "./cli.js"
   },
   "author": "Lincoln Clarete",
   "license": "GPL-3.0"

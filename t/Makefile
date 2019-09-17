@@ -6,4 +6,4 @@ PYC := $(SRC:.efg=.pyc)
 compile: $(PYC)
 clean:; -rm $(PYC)
 
-%.pyc: %.efg; ../compile $<
+%.pyc: %.efg; ../cli.js $<
