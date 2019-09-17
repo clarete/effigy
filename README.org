@@ -18,6 +18,31 @@
 
   More to come!
 
+** How to play with it
+
+   Effigy is currently a teeny little JavaScript program. You can
+   install it with ~npm i efgc~.
+
+   Here's what's available and some of what's not:
+
+*** Currently Supported Types of Values
+    * integers
+    * strings
+    * lists
+    * functions
+*** Language Features
+    * [X] Arithmetic Operators
+    * [X] Logic Operators
+    * [X] Comparison Operators
+    * [-] Flow Control (if/else/while/for)
+    * [-] Exceptions
+    * [ ] Imports
+*** Very useful things missing
+    * [ ] Slice notation
+    * [ ] Variadic arguments
+    * [ ] Named/Default parameters
+    * [-] floating points
+
 ** Host Language
 
    Although the first target of the little compiler is a subset of
