@@ -1,7 +1,7 @@
 f = fn() {
-  let x = 1
-  foo = fn(v) { x = x + v; 0 }
+  let x = 2
+  foo = fn(v) x = x + v
   foo(1)
-  x
+  return x
 }
-print(f()) # 2
+print(f()) # 3

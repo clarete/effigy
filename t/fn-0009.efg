@@ -1,5 +1,5 @@
 fn f(v)
-  if v "something"
-  else "something else"
+  if v return "something"
+  else return "something else"
 
 print(f(true), f(false))

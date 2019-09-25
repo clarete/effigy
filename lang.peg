@@ -19,7 +19,6 @@ Attr            <- Call / Primary
 Call            <- Primary CallParams
 Primary         <- _PROP Expression _PRCL
                  / Value
-                 / Function
                  / Lambda
                  / Identifier
 
@@ -36,7 +35,7 @@ ParamsNone      <-
 CallParams      <- _PROP (ListMult / ListOne / ListNone) _PRCL
 
 # Statements
-Statement       <- BREAK / CONTINUE / ReturnStm / ThrowStm / WhileStm / ForStm / IfStm / TryStm / Assignment / LexAssignment / ExprStm
+Statement       <- BREAK / CONTINUE / ReturnStm / ThrowStm / WhileStm / ForStm / IfStm / TryStm / Function / Assignment / LexAssignment / ExprStm
 ExprStm         <- Expression
 Assignment      <- Identifier _ASSIGN Expression
 LexAssignment   <- _LET Identifier _ASSIGN Expression

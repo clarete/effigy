@@ -2,6 +2,6 @@
 f = fn(p) {
   x = fn(y) p+y
   p = p+2        # p=3
-  x(2)+p+1       # p+2+p+1
+  return x(2)+p+1       # p+2+p+1
 }
 print(f(1))      # 9

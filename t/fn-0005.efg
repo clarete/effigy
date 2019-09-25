@@ -3,9 +3,9 @@ f = fn() {
   let x = 1
   foo = fn(v) {
     x = x + v;
-    x
+    return x
   }
-  foo
+  return foo
 }
 g = f();
 print(g(1))  # 2

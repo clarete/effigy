@@ -441,6 +441,7 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
     // Update number of local variables
     attr('nlocals', attr('varnames').length);
     // End the function
+    loadConst(null);
     emit('return-value');
     const code = leave();
     popscope();
@@ -498,6 +499,13 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
     Null: ({ visit }) => loadConst(null) && visit(),
     List: ({ visit }) => list(visit()),
 
+    // Single expression functions
+    CodeSingle: ({ visit, node }) => {
+      const v = visit(node[1][1]);
+      emit('return-value');
+      return v;
+    },
+
     // Statements
     IfStm: ({ visit, node }) => {
       const [test, body, elsestm] = node[1];
@@ -534,6 +542,11 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
       fixsize(jumpLabel, loopStart);
       fixjrel(setupLabel, loopStart);
       return true;
+    },
+    ExprStm: ({ visit, node }) => {
+      const v = visit();
+      emit('pop-top');
+      return v;
     },
     ThrowStm: ({ visit, node }) => {
       const value = visit();

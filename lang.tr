@@ -2,6 +2,8 @@
 
 Module     <- { "Module" ({ Statement+ } / Statement)? }
 Code       <- { "Code" ({ Statement+ } / Statement)? }
+CodeSingle <- { "Code" { "Statement" Expression } }
+FunCode    <- CodeSingle / Code
 
 # Statements & Expression Types
 Statement  <- { "Statement" (Assignment / IfStm / WhileStm / TryStm / ThrowStm / Function / ReturnStm / ExprStm / Break / Continue) }
@@ -35,10 +37,10 @@ LoadMethod <- { "LoadMethod" Atom }
 MethodCall <- { "MethodCall" { LoadMethod CallParams } }
 
 ScopeId    <- { "ScopeId" Atom }
-Lambda     <- { "Lambda" { Params Code } }
-            / { "Lambda" { ScopeId Params Code } }
-Function   <- { "Function" { Atom Params Code } }
-            / { "Function" { ScopeId Atom Params Code } }
+Lambda     <- { "Lambda" { Params FunCode } }
+            / { "Lambda" { ScopeId Params FunCode } }
+Function   <- { "Function" { Atom Params FunCode } }
+            / { "Function" { ScopeId Atom Params FunCode } }
 
 # Callable Parameter rules
 Params     <- { "Params" { Param+ }? }

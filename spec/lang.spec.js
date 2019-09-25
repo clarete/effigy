@@ -39,6 +39,7 @@ describe("Translate", () => {
             constants: [123, null],
             instructions: [
               ['load-const', 0],
+              ['pop-top'],
               ['load-const', 1],
               ['return-value'],
             ],
@@ -53,6 +54,7 @@ describe("Translate", () => {
             constants: [291, null],
             instructions: [
               ['load-const', 0],
+              ['pop-top'],
               ['load-const', 1],
               ['return-value'],
             ],
@@ -68,6 +70,7 @@ describe("Translate", () => {
             constants: [true, null],
             instructions: [
               ['load-const', 0],
+              ['pop-top'],
               ['load-const', 1],
               ['return-value'],
             ],
@@ -81,6 +84,7 @@ describe("Translate", () => {
             constants: [false, null],
             instructions: [
               ['load-const', 0],
+              ['pop-top'],
               ['load-const', 1],
               ['return-value'],
             ],
@@ -97,6 +101,7 @@ describe("Translate", () => {
             constants: ['oi', null],
             instructions: [
               ['load-const', 0],
+              ['pop-top'],
               ['load-const', 1],
               ['return-value'],
             ],
@@ -113,6 +118,7 @@ describe("Translate", () => {
             constants: [null],
             instructions: [
               ['build-list', 0],
+              ['pop-top'],
               ['load-const', 0],
               ['return-value'],
             ],
@@ -128,6 +134,7 @@ describe("Translate", () => {
             instructions: [
               ['load-const', 0],
               ['build-list', 1],
+              ['pop-top'],
               ['load-const', 1],
               ['return-value'],
             ],
@@ -146,6 +153,7 @@ describe("Translate", () => {
               ['load-const', 2],
               ['load-const', 3],
               ['build-list', 4],
+              ['pop-top'],
               ['load-const', 4],
               ['return-value'],
             ],
@@ -164,6 +172,7 @@ describe("Translate", () => {
           instructions: [
             ['load-name', 0],
             ['call-function', 0],
+            ['pop-top'],
             ['load-const', 0],
             ['return-value'],
           ],
@@ -181,6 +190,7 @@ describe("Translate", () => {
             ['load-name', 0],
             ['load-const', 0],
             ['call-function', 1],
+            ['pop-top'],
             ['load-const', 1],
             ['return-value'],
           ],
@@ -199,6 +209,7 @@ describe("Translate", () => {
             ['load-const', 0],
             ['load-const', 1],
             ['call-function', 2],
+            ['pop-top'],
             ['load-const', 2],
             ['return-value'],
           ],
@@ -220,6 +231,7 @@ describe("Translate", () => {
             ['load-name', 1],
             ['call-function', 0],
             ['call-function', 4],
+            ['pop-top'],
             ['load-const', 3],
             ['return-value'],
           ],
@@ -237,9 +249,11 @@ describe("Translate", () => {
             ['load-name', 0],
             ['load-const', 0],
             ['call-function', 1],
+            ['pop-top'],
             ['load-name', 0],
             ['load-const', 1],
             ['call-function', 1],
+            ['pop-top'],
             ['load-const', 2],
             ['return-value'],
           ],
@@ -260,6 +274,7 @@ describe("Translate", () => {
             ['load-const', 0],
             ['binary-add'],
             ['call-function', 1],
+            ['pop-top'],
             ['load-const', 1],
             ['return-value'],
           ],
@@ -278,6 +293,7 @@ describe("Translate", () => {
           instructions: [
             ['load-name', 0],
             ['unary-negative'],
+            ['pop-top'],
             ['load-const', 0],
             ['return-value'],
           ],
@@ -298,6 +314,7 @@ describe("Translate", () => {
             ['load-const', 2],
             ['binary-multiply'],
             ['binary-add'],
+            ['pop-top'],
             ['load-const', 3],
             ['return-value'],
           ],
@@ -316,6 +333,7 @@ describe("Translate", () => {
             ['load-const', 1],
             ['binary-add'],
             ['call-function', 1],
+            ['pop-top'],
             ['load-const', 2],
             ['return-value'],
           ],
@@ -331,6 +349,7 @@ describe("Translate", () => {
             ['load-const', 0],
             ['load-const', 1],
             ['binary-rshift'],
+            ['pop-top'],
             ['load-const', 2],
             ['return-value'],
           ],
@@ -349,6 +368,7 @@ describe("Translate", () => {
             ['load-const', 0],
             ['load-const', 0],
             ['compare-op', 2],
+            ['pop-top'],
             ['load-const', 1],
             ['return-value'],
           ],
@@ -367,6 +387,7 @@ describe("Translate", () => {
             ['load-const', 0],
             ['jump-if-false-or-pop', 6],
             ['load-const', 1],
+            ['pop-top'],
             ['load-const', 2],
             ['return-value'],
           ],
@@ -385,6 +406,7 @@ describe("Translate", () => {
             ['load-const', 1],
             ['jump-if-true-or-pop', 10],
             ['load-const', 2],
+            ['pop-top'],
             ['load-const', 3],
             ['return-value'],
           ],
@@ -411,6 +433,7 @@ describe("Translate", () => {
             ['build-list', 0],
             ['call-method', 1],
             ['load-attr', 5],   // f
+            ['pop-top'],
             ['load-const', 0],
             ['return-value'],
           ],
@@ -427,6 +450,7 @@ describe("Translate", () => {
           instructions: [
             ['load-name', 0],
             ['load-attr', 1],
+            ['pop-top'],
             ['load-const', 0],
             ['return-value'],
           ],
@@ -445,6 +469,7 @@ describe("Translate", () => {
             ['load-attr', 1],
             ['load-method', 2],
             ['call-method', 0],
+            ['pop-top'],
             ['load-const', 0],
             ['return-value'],
           ],
@@ -464,6 +489,7 @@ describe("Translate", () => {
             ['load-method', 2],
             ['load-const', 0],
             ['call-method', 1],
+            ['pop-top'],
             ['load-const', 1],
             ['return-value'],
           ],
@@ -475,12 +501,15 @@ describe("Translate", () => {
       it("lambda with single expression on the body", () => {
         const tree = parse('fn() 1');
         const code = translate(tree);
+
         expect(code).toEqual(coObj({
           constants: [coObj({
-            constants: [1],
+            constants: [1, null],
             name: '<lambda>',
             instructions: [
               ['load-const', 0],
+              ['return-value'],
+              ['load-const', 1],
               ['return-value'],
             ],
           }), '<lambda>', null],
@@ -488,6 +517,7 @@ describe("Translate", () => {
             ['load-const', 0],
             ['load-const', 1],
             ['make-function', 0],
+            ['pop-top'],
             ['load-const', 2],
             ['return-value'],
           ],
@@ -503,10 +533,12 @@ describe("Translate", () => {
             name: '<lambda>',
             nlocals: 3,
             argcount: 3,
-            constants: [1],
+            constants: [1, null],
             varnames: ['x', 'y', 'z'],
             instructions: [
               ['load-const', 0],
+              ['return-value'],
+              ['load-const', 1],
               ['return-value'],
             ],
           }), '<lambda>', null],
@@ -514,6 +546,7 @@ describe("Translate", () => {
             ['load-const', 0],
             ['load-const', 1],
             ['make-function', 0],
+            ['pop-top'],
             ['load-const', 2],
             ['return-value'],
           ],
@@ -526,10 +559,12 @@ describe("Translate", () => {
 
         expect(code).toEqual(coObj({
           constants: [coObj({
-            constants: [1],
+            constants: [1, null],
             name: 'f',
             instructions: [
               ['load-const', 0],
+              ['return-value'],
+              ['load-const', 1],
               ['return-value'],
             ],
           }), 'f', null],
@@ -562,7 +597,7 @@ describe("Translate", () => {
               name: '<lambda>',
               nlocals: 1,
               argcount: 1,
-              constants: [1],
+              constants: [1, null],
               names: ['a'],
               varnames: ['p'],
               instructions: [
@@ -571,6 +606,8 @@ describe("Translate", () => {
                 ['binary-add'],
                 ['load-const', 0],
                 ['binary-add'],
+                ['return-value'],
+                ['load-const', 1],
                 ['return-value'],
               ],
             }),
@@ -590,6 +627,8 @@ describe("Translate", () => {
             ['load-name', 1],   // f
             ['load-const', 0],  // 0
             ['call-function', 1],
+            ['pop-top'],
+
             ['load-const', 3],
             ['return-value'],
           ],
@@ -599,7 +638,7 @@ describe("Translate", () => {
       it("should use store-fast for local names and arguments", () => {
         // `a' is defined and used locally only, so it should be
         // stored within the local scope array
-        const tree = parse(`fn(p) { a = p+1; a }`);
+        const tree = parse(`fn(p) { a = p+1; return a }`);
         const code = translate(tree);
 
         expect(code).toEqual(coObj({
@@ -607,7 +646,7 @@ describe("Translate", () => {
             name: '<lambda>',
             nlocals: 2,
             argcount: 1,
-            constants: [1],
+            constants: [1, null],
             varnames: ['p', 'a'],
             instructions: [
               ['load-fast', 0],
@@ -616,6 +655,8 @@ describe("Translate", () => {
               ['store-fast', 1],
               ['load-fast', 1],
               ['return-value'],
+              ['load-const', 1],
+              ['return-value'],
             ],
           }), '<lambda>', null ],
           names: [],
@@ -623,11 +664,12 @@ describe("Translate", () => {
           freevars: [],
           cellvars: [],
           instructions: [
-            [ 'load-const', 0 ],
-            [ 'load-const', 1 ],
-            [ 'make-function', 0],
-            [ 'load-const', 2 ],
-            [ 'return-value' ],
+            ['load-const', 0],
+            ['load-const', 1],
+            ['make-function', 0],
+            ['pop-top'],
+            ['load-const', 2],
+            ['return-value'],
           ],
         }));
       });
@@ -636,10 +678,10 @@ describe("Translate", () => {
         const tree = parse(`
 f = fn(p) {
   x = fn(y) p+y
-  p = p+2        # p=3
-  x(2)+p+1       # p+2+p+1
+  p = p+2         # p=3
+  return x(2)+p+1 # p+2+p+1
 }
-print(f(1))      # 9
+print(f(1))       # 9
 `);
         const code = translate(tree);
 
@@ -656,16 +698,20 @@ print(f(1))      # 9
                   argcount: 1,
                   varnames: ['y'],
                   freevars: ['p'],
+                  constants: [null],
                   instructions: [
                     ['load-deref', 0], // p
                     ['load-fast', 0],  // y
                     ['binary-add'],
+                    ['return-value'],
+                    ['load-const', 0],
                     ['return-value'],
                   ],
                 }),
                 '<lambda>',
                 2,
                 1,
+                null,
               ],
               varnames: ['p', 'x'],
               cellvars: ['p'],
@@ -690,6 +736,9 @@ print(f(1))      # 9
                 ['load-const', 3],  // 1
                 ['binary-add'],
                 ['return-value'],
+
+                ['load-const', 4],
+                ['return-value'],
               ],
             }),
             '<lambda>',
@@ -708,6 +757,7 @@ print(f(1))      # 9
             ['load-const', 2],    // 1
             ['call-function', 1], // 'f'
             ['call-function', 1], // 'print'
+            ['pop-top'],
 
             ['load-const', 3],
             ['return-value'],
@@ -732,6 +782,7 @@ print(f(1))      # 9
             ['load-name', 1],
             ['load-name', 0],
             ['call-function', 1],
+            ['pop-top'],
             ['load-const', 1],
             ['return-value'],
           ],
@@ -741,10 +792,10 @@ print(f(1))      # 9
       it("should support let", () => {
         const tree = parse(`
 f = fn() {
-  let x = 1;
-  foo = fn(v) { x = x + v; x };
-  foo(1);
-  x
+  let x = 1
+  foo = fn(v) x = x + v
+  foo(1)
+  return x
 }
 print(f()) # 2
       `);
@@ -761,16 +812,19 @@ print(f()) # 2
                   freevars: ['x'],
                   nlocals: 1,
                   argcount: 1,
+                  constants: [null],
                   instructions: [
                     ['load-deref', 0],
                     ['load-fast', 0],
-                    ['binary-add' ],
+                    ['binary-add'],
                     ['store-deref', 0],
-                    ['load-deref', 0],
-                    ['return-value' ],
+                    ['load-const', 0],
+                    ['return-value'],
                   ],
                 }),
-                '<lambda>' ],
+                '<lambda>',
+                null,
+              ],
               name: '<lambda>',
               nlocals: 1,
               varnames: ['foo'],
@@ -787,7 +841,10 @@ print(f()) # 2
                 ['load-fast', 0],
                 ['load-const', 0],
                 ['call-function', 1],
+                ['pop-top'],
                 ['load-deref', 0],
+                ['return-value'],
+                ['load-const', 3],
                 ['return-value'],
               ],
             }),
@@ -805,6 +862,8 @@ print(f()) # 2
             ['load-name', 0],
             ['call-function', 0],
             ['call-function', 1],
+            ['pop-top'],
+
             ['load-const', 2],
             ['return-value'],
           ],
@@ -822,8 +881,9 @@ print(f()) # 2
           names: [],
           instructions: [
             ['load-const', 0],
-            ['pop-jump-if-false', 6],
+            ['pop-jump-if-false', 8],
             ['load-const', 1],
+            ['pop-top'],
             ['load-const', 2],
             ['return-value'],
           ],
@@ -838,12 +898,14 @@ print(f()) # 2
           constants: [true, 1, 2, null],
           instructions: [
             /* 02 */ ['load-const', 0],
-            /* 04 */ ['pop-jump-if-false', 8],
+            /* 04 */ ['pop-jump-if-false', 10],
             /* 06 */ ['load-const', 1],
-            /* 08 */ ['jump-forward', 2],
-            /* 10 */ ['load-const', 2],
-            /* 12 */ ['load-const', 3],
-            /* 14 */ ['return-value'],
+            /* 08 */ ['pop-top'],
+            /* 10 */ ['jump-forward', 4],
+            /* 12 */ ['load-const', 2],
+            /* 14 */ ['pop-top'],
+            /* 16 */ ['load-const', 3],
+            /* 18 */ ['return-value'],
           ],
         }));
       });
@@ -857,14 +919,15 @@ print(f()) # 2
         expect(code).toEqual(coObj({
           constants: [true, 1, null],
           instructions: [
-            /* 02 */ ['setup-loop', 10],
+            /* 02 */ ['setup-loop', 12],
             /* 04 */ ['load-const', 0],
-            /* 06 */ ['pop-jump-if-false', 12],
+            /* 06 */ ['pop-jump-if-false', 14],
             /* 08 */ ['load-const', 1],
-            /* 10 */ ['jump-absolute', 2],
-            /* 12 */ ['pop-block'],
-            /* 14 */ ['load-const', 2],
-            /* 16 */ ['return-value'],
+            /* 10 */ ['pop-top'],
+            /* 12 */ ['jump-absolute', 2],
+            /* 14 */ ['pop-block'],
+            /* 16 */ ['load-const', 2],
+            /* 18 */ ['return-value'],
           ],
         }));
       });
@@ -899,31 +962,33 @@ print(f()) # 2
           constants: [null],
           names: ['a', 'Err', 'err', 'b'],
           instructions: [
-            /* 00 */ ['setup-except', 6],
+            /* 00 */ ['setup-except', 8],
             /* 02 */ ['load-name', 0],   // a
-            /* 04 */ ['pop-block'],
-            /* 06 */ ['jump-forward', 36],
+            /* 04 */ ['pop-top'],
+            /* 06 */ ['pop-block'],
+            /* 08 */ ['jump-forward', 38],
 
-            /* 08 */ ['dup-top'],
-            /* 10 */ ['load-name', 1],   // Err
-            /* 12 */ ['compare-op', 10],
-            /* 14 */ ['pop-jump-if-false', 42],
+            /* 10 */ ['dup-top'],
+            /* 12 */ ['load-name', 1],   // Err
+            /* 14 */ ['compare-op', 10],
+            /* 16 */ ['pop-jump-if-false', 46],
             /* 18 */ ['pop-top'],
             /* 20 */ ['store-name', 2],
             /* 22 */ ['pop-top'],
-            /* 24 */ ['setup-finally', 6],
+            /* 24 */ ['setup-finally', 8],
 
             /* 26 */ ['load-name', 3],   // b
-            /* 28 */ ['pop-block'],
-            /* 30 */ ['load-const', 0],
+            /* 28 */ ['pop-top'],
+            /* 30 */ ['pop-block'],
             /* 32 */ ['load-const', 0],
+            /* 34 */ ['load-const', 0],
 
-            /* 34 */ ['store-name', 2],  // err
-            /* 36 */ ['delete-name', 2], // err
-            /* 38 */ ['end-finally'],
-            /* 40 */ ['pop-except'],
-            /* 42 */ ['jump-forward', 2],
-            /* 44 */ ['end-finally'],
+            /* 36 */ ['store-name', 2],  // err
+            /* 38 */ ['delete-name', 2], // err
+            /* 40 */ ['end-finally'],
+            /* 42 */ ['pop-except'],
+            /* 44 */ ['jump-forward', 2],
+            /* 46 */ ['end-finally'],
 
             /* 46 */ ['load-const', 0],
             /* 48 */ ['return-value'],
