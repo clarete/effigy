@@ -1,0 +1,101 @@
+# When the javascript version was bootstrapped I chose the jasmine
+# style to structure the test suite because it's simple and powerful.
+# This file implements the very minimum needed to meet the jasmine
+# interface used by the language test suites.
+
+stdout = __import__("sys").stdout
+pprint = __import__("pprint").pprint
+
+# Super duper hack
+namedtuple = __import__("collections").namedtuple
+
+# Where we store all the tests for now
+world = []
+wpush = fn(t) world.append(t)
+
+# Where we store focused tests
+focused = []
+fpush = fn(t) focused.append(t)
+
+# Size of indentation step
+INDENT = 2
+
+# Regular tests
+
+fn describe(name, callback) {
+  wpush(name)
+  wpush(INDENT)
+  callback()
+  wpush(-INDENT)
+}
+
+fn it(name, callback) {
+  wpush(name)
+  wpush(callback)
+}
+
+# Focused tests
+
+fn fit(name, callback) {
+  fpush(name)
+  fpush(callback)
+}
+
+fn fdescribe(name, callback) {
+  fpush(name)
+  fpush(INDENT)
+  callback()
+  fpush(-INDENT)
+}
+
+# Entry point
+
+fn run() {
+  indent = 0
+  wat = focused or world
+  while wat {
+    c = wat.pop(0)
+    if callable(c) c()
+    else if isinstance(c, int) indent = indent + c
+    else if isinstance(c, str) { stdout.write(" " * indent) ; print(c) }
+    else throw Exception("Unreachable")
+  }
+}
+
+fn expect(data) {
+  fn toEqual(other) {
+    if data == other return true
+    throw Exception("Things are different from expected")
+  }
+  fn toThrow(exceptionClass) {
+    try data() catch exceptionClass as excInst return true
+    throw Exception("Things should have thrown an exception")
+  }
+  # Effigy doesn't support classes yet, so users can't really declare
+  # objects with attributes. The hack done here with a named tuple
+  # will associate the above functions with attributes of the same
+  # name. And the `data' variable becomes in fact the "instance" data.
+  cls = namedtuple("Expect", ["toEqual", "toThrow"])
+  obj = cls(toEqual, toThrow)
+  return obj
+}
+
+# describe("a", fn() {
+#   it("a.0", fn() {
+#     expect("a").toEqual("a")
+#   })
+#   it("a.1", fn() {
+#     1
+#   })
+# })
+
+# describe("b", fn() {
+#   it("b.0", fn() {
+#     2
+#   })
+#   it("b.1", fn() {
+#     3
+#   })
+# })
+
+# run()

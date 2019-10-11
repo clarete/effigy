@@ -1,0 +1,92 @@
+# Testing tools
+_testrun = __import__("testrun")
+it = _testrun.it
+fit = _testrun.fit
+
+describe = _testrun.describe
+run = _testrun.run
+expect = _testrun.expect
+
+# What we're actually testing
+_exceptions = __import__("exceptions")
+MatchError = _exceptions.MatchError
+PredicateError = _exceptions.PredicateError
+peg = __import__("peg")
+
+fn consumelist(options, error)
+  fn() if options return options.pop(0)
+       else throw MatchError(error)
+
+describe("peg primitives", fn() {
+  describe("Star Operator (*)", fn()  {
+    it("should return nothing if it doesnt match anything", fn() {
+      fn gen() throw MatchError("foo")
+      expect(peg.ZeroOrMore(gen)).toEqual([])
+    })
+    it("should match as much as possible", fn() {
+      consumer = consumelist(["a", "b"], "Match")
+      expect(peg.ZeroOrMore(consumer)).toEqual(["a", "b"])
+    })
+  })
+
+  describe("Plus Operator (+)", fn() {
+    it("should fail if it doesnt match anything", fn() {
+      fn gen() throw MatchError("foo")
+      expect(fn() peg.OneOrMore(gen)).toThrow(MatchError)
+    })
+    it("should match as much as possible", fn() {
+      consumer = consumelist(["a", "b"], "Match")
+      expect(peg.OneOrMore(consumer)).toEqual(["a", "b"])
+    })
+  })
+
+  describe("Choice Operator (/)", fn() {
+    it("should return last error exhaust all options", fn() {
+      fn err0() throw MatchError("err0")
+      fn err1() throw MatchError("err1")
+      fn err2() throw MatchError("err2")
+      expect(fn() peg.Choice([err0, err1, err2])).toThrow(MatchError)
+    })
+    it("should select first successful match", fn() {
+      fn err0() throw MatchError("err0")
+      fn suc1() "yay"
+      fn err2() throw MatchError("err2")
+      expect(peg.Choice([err0, suc1, err2])).toEqual("yay")
+    })
+  })
+
+  describe("Optional Operator (?)", fn() {
+    it("should return empty when it doesn't match", fn() {
+      fn err0() throw MatchError("err0")
+      expect(peg.Optional(err0)).toEqual(null)
+    })
+    it("should result of match on success", fn() {
+      fn success() "awessome"
+      expect(peg.Optional(success)).toEqual("awessome")
+    })
+  })
+
+  describe("Not Operator (!)", fn() {
+    it("should return true when it doesn't match", fn() {
+      fn err0() throw MatchError("err0")
+      expect(peg.Not(err0)).toEqual(true)
+    })
+    it("should return false when it matches", fn() {
+      fn success() "awessome"
+      expect(fn() peg.Not(success)).toThrow(PredicateError)
+    })
+  })
+
+  describe("And Operator (&)", fn() {
+    it("should return true when it matches", fn() {
+      fn success() "awessome"
+      expect(peg.And(success)).toEqual(true)
+    })
+    it("should return false when it doesn't match", fn() {
+      fn err0() throw MatchError("err0")
+      expect(fn() peg.And(err0)).toThrow(PredicateError)
+    })
+  })
+})
+
+run()

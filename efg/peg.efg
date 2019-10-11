@@ -1,0 +1,74 @@
+# We'll get rid of this as soon as we can define new exceptions from
+# within Effigy
+_exceptions = __import__("exceptions")
+MatchError = _exceptions.MatchError
+PredicateError = _exceptions.PredicateError
+
+# ---- PEG Primitives ----
+
+fn ZeroOrMore(f) {
+  # "Star Operator (*)
+
+  # Takes a function and executes it repeatedly until an exception is
+  # thrown. Then it retuns a list of all the successful returns. If not
+  # a single successful call was made to `f', it will return an empty
+  # list. This function never throws matching errors."
+  output = []
+  while true
+    try output.append(f())
+    catch Exception as e break
+  return output
+}
+
+fn OneOrMore(f) {
+  # "Plus Operator (+)
+
+  # Very similar to the Star Operator (*) but requires the function in
+  # `f' to return successfuly at least once."
+  return [f()] + ZeroOrMore(f)
+}
+
+fn Choice(options) {
+  # "Choice Operator (/)
+
+  # Takes a list of functions and returns the return value of the first
+  # successful call. If all the functions in `options' throw exceptions,
+  # this operator will throw a matching error."
+  last = null
+  for nth in options {
+    try return nth()
+    catch MatchError as e last = e
+  }
+  throw last or Exception("No Options Available")
+}
+
+fn Optional(f) {
+  # "Optional Operator (?)
+
+  # Either return the return value of `f' or null if calling `f' throws
+  # an error."
+  try return f()
+  catch MatchError as e return null
+}
+
+fn Not(f) {
+  # "Not Operator (!)
+
+  # This syntactic predicate will call `f' and if that doesn't throw an
+  # error, this operator will throw a matchinig error. If calling `f'
+  # does throw an error, then this operator will return `true'.
+
+  # The output value isn't really telling anything particularly, but it
+  # might allow for composition by returning a true value when matching
+  # succeeds."
+  try f()
+  catch MatchError as e return true
+  throw PredicateError
+}
+
+fn And(f) {
+  # "And Operator (&)
+
+  # Literally !!expression or `lookahead' operator."
+  return Not(fn() Not(f))
+}
