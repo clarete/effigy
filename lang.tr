@@ -6,10 +6,11 @@ CodeSingle <- { "Code" { "Statement" Expression } }
 FunCode    <- CodeSingle / Code
 
 # Statements & Expression Types
-Statement  <- { "Statement" (Assignment / IfStm / WhileStm / TryStm / ThrowStm / Function / ReturnStm / ExprStm / Break / Continue) }
+Statement  <- { "Statement" (Assignment / IfStm / WhileStm / ForStm / TryStm / ThrowStm / Function / ReturnStm / ExprStm / Break / Continue) }
 Assignment <- { "Assignment" { Expression (Store / StoreLex) } }
 ExprStm    <- Expression
 WhileStm   <- { "WhileStm" { Expression Code } }
+ForStm     <- { "ForStm" { Store Expression Code } }
 Break      <- "break"
 Continue   <- "continue"
 IfStm      <- { "IfStm" { Expression Code Code? } }

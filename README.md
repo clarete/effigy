@@ -66,8 +66,7 @@ Here's what's available and some of what's not:
 -   [X] Arithmetic Operators
 -   [X] Logic Operators
 -   [X] Comparison Operators
--   [X] Flow Control (if/else/while/for &#x2013; for loops didn't land
-    yet)
+-   [X] Flow Control (if/else/while/for)
 -   [X] Exceptions (single catch block for now)
 -   [ ] Imports
 

@@ -911,6 +911,33 @@ print(f()) # 2
       });
     });                         // If
 
+    describe('For', () => {
+      it("should translate basic loop code", () => {
+        const tree = parse('for i in a print(i)');
+        const code = translate(tree);
+
+        expect(code).toEqual(coObj({
+          names: ['a', 'i', 'print'],
+          constants: [null],
+          instructions: [
+            /* 02 */ ['setup-loop', 20],
+            /* 04 */ ['load-name', 0],
+            /* 06 */ ['get-iter'],
+            /* 08 */ ['for-iter', 12],
+            /* 10 */ ['store-name', 1],
+            /* 12 */ ['load-name', 2],
+            /* 14 */ ['load-name', 1],
+            /* 16 */ ['call-function', 1],
+            /* 18 */ ['pop-top'],
+            /* 20 */ ['jump-absolute', 6],
+            /* 22 */ ['pop-block'],
+            /* 24 */ ['load-const', 0],
+            /* 26 */ ['return-value'],
+          ],
+        }));
+      });
+    });
+
     describe('While', () => {
       it("should translate basic case", () => {
         const tree = parse('while true 1');

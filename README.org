@@ -36,8 +36,7 @@
     * [X] Arithmetic Operators
     * [X] Logic Operators
     * [X] Comparison Operators
-    * [X] Flow Control (if/else/while/for -- for loops didn't land
-      yet)
+    * [X] Flow Control (if/else/while/for)
     * [X] Exceptions (single catch block for now)
     * [ ] Imports
 *** Very useful things missing

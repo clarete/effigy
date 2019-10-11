@@ -63,6 +63,7 @@ const parserActions = {
   Code: tag,
   Statement: tag,
   IfStm: tag,
+  ForStm: tag,
   WhileStm: tag,
   TryStm: tag,
   CatchStm: tag,
@@ -540,6 +541,27 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
 
       fixjabs(testLabel);
       fixsize(jumpLabel, loopStart);
+      fixjrel(setupLabel, loopStart);
+      return true;
+    },
+    ForStm: ({ visit, node }) => {
+      const [iter, iterable, body] = node[1];
+      const setupLabel = ref();
+      emit('setup-loop', setupLabel);
+      const loopStart = pos();
+      visit(iterable.value);
+      emit('get-iter');
+      const iterLabel = ref();
+      const iterPos = pos();
+      emit('for-iter', iterLabel);
+      visit(iter);
+      visit(body.value);
+      const jumpLabel = ref();
+      emit('jump-absolute', jumpLabel);
+      emit('pop-block');
+
+      fixjrel(iterLabel, iterPos+2);
+      fixsize(jumpLabel, iterPos);
       fixjrel(setupLabel, loopStart);
       return true;
     },
