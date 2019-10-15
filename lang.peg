@@ -15,8 +15,10 @@ Power           <- Unary ((POWER / MOD) Unary)*
 Unary           <- (PLUS / MINUS / NOT)? Attribute
 
 Attribute       <- Attr (_DOT Attr)*
-Attr            <- Call / Primary
+Attr            <- Call / Access / Primary
 Call            <- Primary CallParams
+Access          <- Primary _SBOP Slice _SBCL
+Slice           <- Primary _COLON Primary / Primary
 Primary         <- _PROP Expression _PRCL
                  / Value
                  / Lambda
@@ -93,6 +95,7 @@ _AS             <- 'as'           _
 # Lexical Delimiters
 _DQUOTE         <- '"'
 _COMA           <- ',' _
+_COLON          <- ':' _
 _PROP           <- '(' _
 _PRCL           <- ')' _
 _CBOP           <- '{' _

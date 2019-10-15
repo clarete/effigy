@@ -20,7 +20,7 @@ ReturnStm  <- { "ReturnStm" Expression }
 TryStm     <- { "TryStm" { Code CatchStm } }
 CatchStm   <- { "CatchStm" { Load Store Code } }
 
-Expression <- Attribute / Logical / BinOp / Comparison / Call / Lambda / Load / Unary / Value
+Expression <- Attribute / Logical / BinOp / Comparison / Call / Access / Lambda / Load / Unary / Value
 
 # Logical Operators
 Logical    <- { "Logical" { Expression (LogicalTwo / LogicalMult) } }
@@ -50,6 +50,10 @@ Param      <- { "Param" Atom }
 # Call Site rules
 Call       <- { "Call" { Expression CallParams } }
 CallParams <- { Expression+ }?
+
+# Child access
+Access     <- { "Access" { Expression (Expression / Slice) } }
+Slice      <- { "Slice" { Expression Expression } }
 
 # Value rules
 Value      <- { "Value" (Number / String / Boolean / List / Null) }

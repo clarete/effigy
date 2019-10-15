@@ -497,6 +497,46 @@ describe("Translate", () => {
       });
     });
 
+    describe("Slices", () => {
+      it("should compile list item access x[y]", () => {
+        const tree = parse('a[0]');
+        const code = translate(tree);
+
+        expect(code).toEqual(coObj({
+          constants: [0, null],
+          names: ['a'],
+          instructions: [
+            ['load-name', 0],
+            ['load-const', 0],
+            ['binary-subscr'],
+            ['pop-top'],
+            ['load-const', 1],
+            ['return-value'],
+          ],
+        }));
+      });
+
+      it("should compile list slices x[y:z]", () => {
+        const tree = parse('a[2:4]');
+        const code = translate(tree);
+
+        expect(code).toEqual(coObj({
+          constants: [2, 4, null],
+          names: ['a'],
+          instructions: [
+            ['load-name', 0],
+            ['load-const', 0],
+            ['load-const', 1],
+            ['build-slice', 2],
+            ['binary-subscr'],
+            ['pop-top'],
+            ['load-const', 2],
+            ['return-value'],
+          ],
+        }));
+      });
+    });
+
     describe("Callables", () => {
       it("lambda with single expression on the body", () => {
         const tree = parse('fn() 1');

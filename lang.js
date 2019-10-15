@@ -58,6 +58,7 @@ const parserActions = {
   String: ({ visit, action }) => [action, join(visit())],
   // Discard if single child
   Logical: lift,
+  Slice: lift,
   // Things we want tagged
   Module: tag,
   Code: tag,
@@ -74,6 +75,7 @@ const parserActions = {
   Value: tag,
   Call: tag,
   Lambda: tag,
+  Access: tag,
   // List Values
   List: tag,
   ListOne: trOne,
@@ -637,6 +639,16 @@ function translate(tree, flags=0, assembler=dummyAssembler()) {
 
     // Operators
     LoadAttr: ({ visit }) => loadAttr(visit()[1]),
+    Slice: ({ visit, node }) => {
+      const value = visit();
+      emit('build-slice', node.length);
+      return value;
+    },
+    Access: ({ visit }) => {
+      const value = visit();
+      emit('binary-subscr');
+      return value;
+    },
     Comparison: ({ visit }) => {
       const value = visit();
       emit('compare-op', CMP_OP_MAP[value[2]]);
