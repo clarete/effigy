@@ -17,6 +17,26 @@ fn consumelist(options, error)
   fn() if options return options.pop(0)
        else throw MatchError(error)
 
+describe("peg parser", fn() {
+  describe("#EndOfLine", fn() {
+    it("should match \r\n", fn() {
+      p = peg.parse("\r\n")
+      expect(p.EndOfLine()).toEqual("\n")
+      expect(p.eos()).toEqual(true)
+    });
+    it("should match \n", fn() {
+      p = peg.parse("\n")
+      expect(p.EndOfLine()).toEqual("\n")
+      expect(p.eos()).toEqual(true)
+    });
+    fit("should match \r", fn() {
+      p = peg.parse("\r")
+      expect(p.EndOfLine()).toEqual("\r")
+      expect(p.eos()).toEqual(true)
+    })
+  })
+})
+
 describe("peg primitives", fn() {
   describe("Star Operator (*)", fn()  {
     it("should return nothing if it doesnt match anything", fn() {

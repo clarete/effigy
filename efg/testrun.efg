@@ -48,6 +48,10 @@ fn fdescribe(name, callback) {
   fpush(-INDENT)
 }
 
+fn saferun(f)
+  try f()
+  catch Exception as exc print("FAILED:", exc)
+
 # Entry point
 
 fn run() {
@@ -55,7 +59,7 @@ fn run() {
   wat = focused or world
   while wat {
     c = wat.pop(0)
-    if callable(c) c()
+    if callable(c) saferun(c)
     else if isinstance(c, int) indent = indent + c
     else if isinstance(c, str) { stdout.write(" " * indent) ; print(c) }
     else throw Exception("Unreachable")

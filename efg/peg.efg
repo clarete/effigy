@@ -3,6 +3,7 @@
 _exceptions = __import__("exceptions")
 MatchError = _exceptions.MatchError
 PredicateError = _exceptions.PredicateError
+namedtuple = __import__("collections").namedtuple
 
 # ---- PEG Primitives ----
 
@@ -72,3 +73,98 @@ fn And(f) {
   # Literally !!expression or `lookahead' operator."
   return Not(fn() Not(f))
 }
+
+# Basic machinery to parse things
+fn scan(source) {
+  let cursor = 0  # Position in the buffer
+  let ffp = 0     # Farther failure position
+
+  # Move the cursor forward and update Farthest Failure Position (fpp)
+  # if that makes sense along the way
+  fn ipp(x) {
+    cursor = cursor + 1
+    if (cursor > ffp) ffp = cursor
+    return x
+  }
+
+  # Small set of utilities to move the cursor by matching or error
+  # with some information about the failure position
+  fn error(msg) throw MatchError("{msg} at pos {ffp}")
+  fn checkeos() eos() and error("End of stream")
+  fn currc() {
+    print("INSIDE CURRC", cursor, source)
+    return source[cursor]
+  }
+  fn nextc() checkeos() or ipp(source[cursor])
+  fn testc(c) currc() == c
+  fn match(c) testc(c) and nextc() or false
+  fn mustc(c) testc(c) or error("Missing {c} (mustc)")
+  fn range(r) {
+    if (currc() >= r[0] and currc() <= r[1]) return nextc()
+    return error("Missing '{currc()}' (range)");
+  }
+  fn mustAtom(c) {
+    out = []
+    for x in c must(x) and out.append(x)
+    return "".join(out)
+  }
+  fn must(c) match(c) or error("Missing '{c}' (must)")
+  fn mustCharOrAtom(c) len(c) == 1 and must(c) or mustAtom(c)
+
+  fn any() checkeos() or nextc()
+  fn eos() cursor == len(source)
+  fn backtrack(expr) {
+    saved = cursor
+    try return expr()
+    catch MatchError as e { cursor = saved; throw e }
+  }
+
+  fn _range(p) consp(p) and range(p) or must(p)
+  # Need to cast the generator into list for python
+  fn _choice(a) {
+    bt = []
+    for i in a bt.append(fn() backtrack(i))
+    print("BT: ", bt)
+    return Choice(bt)
+    # Choice(list(map(fn(x) fn() backtrack(x), a)))
+  }
+  fn _not(p) {
+    save = cursor
+    try { not(p); return pred() }
+    catch MatchError as e { cursor = save; error("Predicate") }
+  }
+
+  ## Return the interface necessary to scan a char stream
+  cls = namedtuple("scan", [
+    "Choice", "Not", "Range", "must", "match", "eos",
+    "error", "nextc", "any", "currc"
+  ])
+  return cls(
+    _choice, _not, _range, mustCharOrAtom, match, eos,
+    error, nextc, any, currc
+  )
+}
+
+fn peg(s) {
+
+  print("GRANDE BOSTA", s.currc())
+
+  fn EndOfLine() s.Choice([
+    fn() s.must("\r") and s.must("\n"),
+    fn() s.must("\n"),
+    fn() s.must("\r")
+  ]);
+
+  fn EndOfFile() s.eos() or s.error("Expected EOS");
+
+  # Interface
+  cls = namedtuple("peg", [
+    "EndOfFile", "EndOfLine"
+  ])
+  return cls(
+    EndOfLine,
+    EndOfFile
+  )
+}
+
+fn parse(source) peg(scan(source))
