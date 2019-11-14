@@ -47,6 +47,8 @@ const not = (thing) => {
 // And Operator (&)
 const and = (thing) => not(() => not(thing));
 
+// --- Helpers ---
+
 // Helper for flattening sequences
 const singleOrList = (x) => {
   if (consp(x)                 && // It's a list
@@ -62,6 +64,8 @@ const car = ([h, ...t]) => h;
 const cdr = ([h, ...t]) => t;
 const consp = Array.isArray;
 
+// --- Scanners ---
+
 // Basic machinery to parse things
 function scan(source) {
   let cursor = 0;
@@ -72,13 +76,13 @@ function scan(source) {
     return x;
   };
 
-  const error = (msg) => { throw new MatchError(msg + ` at pos ${ffp}`); };
+  const error = (msg) => { throw new MatchError(`${msg} at pos ${ffp}`); };
   const checkeos = () => eos() && error('End of stream');
   const currc = () => source[cursor] || '';
   const nextc = () => checkeos() || ipp(source[cursor]);
   const testc = (c) => currc() === c;
   const match = (c) => testc(c) ? nextc() : false;
-  const mustc = (c) => testc(c) || error(`Missing '${c} (mustc)'`);
+  const mustc = (c) => testc(c) || error(`Missing '${c}' (mustc)`);
   const range = ([a, b]) => {
     if (currc() >= a && currc() <= b) return nextc();
     return error(`Missing '${currc()}' (range)`);
@@ -207,6 +211,7 @@ function peg(s) {
   const mc = (l) => l.length === 1 ? l : [prim('choice')].concat(l);
   const Expression = () => mc([Sequence()].concat(zeroOrMore(() => SLASH() && Sequence())));
   const Sequence = () => singleOrList(zeroOrMore(Prefix));
+
   const Prefix = () => {
     const [prefix, suffix] = [optional(() => s.Choice(AND, NOT)), Suffix()];
     return prefix ? [prefix, suffix] : suffix;
@@ -236,8 +241,11 @@ function peg(s) {
     s.must(ch),
     zeroOrMore(() => not(() => s.mustc(ch)) && Char()),
     s.must(ch),
-    Spacing()][1].join("");
-  const Literal = () => s.Choice(_mkLiteral("'"), _mkLiteral('"'));
+    Spacing(),
+  ][1].join("");
+  const Literal = () => s.Choice(
+    _mkLiteral("'"),
+    _mkLiteral('"'));
   const Class = () => {
     s.must('[');
     const cls = singleOrList(zeroOrMore(() => s.Not(() => s.mustc(']')) && Range()));
@@ -247,8 +255,13 @@ function peg(s) {
       ? singleOrList(cls)
       : [prim('choice'), ...cls];
   };
-
-  const Range = () => s.Choice(() => [prim('range'), Char(), s.must('-'), Char()].filter((_, i) => i !== 2), Char);
+  const Range = () => {
+    const _range = () => {
+      const [left,, right] = [Char(), s.must('-'), Char()];
+      return [prim('range'), left, right];
+    };
+    return s.Choice(_range, Char);
+  };
   const Char = () => {
     if (s.match('\\')) {
       const eschr = ['n', 'r', 't', "'", '"', '[', ']', '\\'];
