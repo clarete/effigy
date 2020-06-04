@@ -212,19 +212,13 @@ function assembler(co_filename) {
   // -- Mutator for instructions
   const emit = (op, arg) =>
     curr()[1].push(arg !== undefined ? [op, arg] : [op]);
-  const backtrack = (f) => {
-    const current = curr();
-    const copy = current[1].slice();
-    try { return f(); }
-    catch (e) { current[1] = copy; throw e; }
-  };
   // -- Save labels and patch'em back
   const labels = [];
   const ref = () => { labels.push(pos()); return labels.length-1; };
   const pos = () => curr()[1].length;
   const fix = (l, p) => curr()[1][labels[l]][1] = p;
   // -- Basic interface for assembler
-  return { enter, leave, emit, attr, backtrack, ref, pos, fix };
+  return { enter, leave, emit, attr, ref, pos, fix };
 }
 
 function header(mtime, length, write) {
