@@ -99,7 +99,7 @@ function scan(source) {
   const nextc = () => checkeos() || ipp(source[cursor]);
   const testc = (c) => currc() === c;
   const match = (c) => testc(c) ? nextc() : false;
-  const mustc = (c) => testc(c) || error(`Missing '${c}' (mustc)`);
+  const expect = (c) => testc(c) || error(`Missing '${c}' (expect)`);
   const range = ([a, b]) => {
     if (currc() >= a && currc() <= b) return nextc();
     return error(`Missing '${currc()}' (range)`);
@@ -130,7 +130,7 @@ function scan(source) {
   const Range = (p) => consp(p) ? range(p) : must(p);
   return {
     Not, Choice, Range,
-    currc, mustc, must: mustCharOrAtom,
+    currc, expect, must: mustCharOrAtom,
     match, eos, error, nextc, any,
   };
 }
@@ -256,7 +256,7 @@ function peg(s) {
   };
   const _mkLiteral = (ch) => () => [
     s.must(ch),
-    zeroOrMore(() => not(() => s.mustc(ch)) && Char()),
+    zeroOrMore(() => not(() => s.expect(ch)) && Char()),
     s.must(ch),
     Spacing(),
   ][1].join("");
@@ -265,7 +265,7 @@ function peg(s) {
     _mkLiteral('"'));
   const Class = () => {
     s.must('[');
-    const cls = singleOrList(zeroOrMore(() => s.Not(() => s.mustc(']')) && Range()));
+    const cls = singleOrList(zeroOrMore(() => s.Not(() => s.expect(']')) && Range()));
     s.must(']');
     Spacing();
     return typeof cls === 'string' || isFuncAst(cls)
